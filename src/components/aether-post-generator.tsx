@@ -64,6 +64,7 @@ const postTypeOptions = [
   "User-Generated Content Feature",
   "News / Update",
   "Storytelling",
+  "Memes",
 ];
 
 const overlayFontStyleOptions = [
@@ -659,5 +660,7 @@ export default function AetherPostGenerator() {
   );
 }
 
+
+    
 
     
