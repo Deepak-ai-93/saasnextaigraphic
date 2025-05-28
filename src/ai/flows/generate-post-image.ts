@@ -4,7 +4,7 @@
 
 /**
  * @fileOverview Image generation flow for social media posts, with text overlay,
- * considering niche, category, and image type for more personalized results.
+ * considering niche, category, image type, and visual description for highly personalized results.
  *
  * - generatePostImage - A function that handles the image generation process.
  * - GeneratePostImageInput - The input type for the generatePostImage function.
@@ -15,15 +15,16 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GeneratePostImageInputSchema = z.object({
-  postDescription: z
+  imageVisualPrompt: z
     .string()
-    .describe('The description of the social media post for generating image.'),
+    .describe('A detailed description of what the image should visually depict.'),
   overlayText: z
     .string()
     .describe('The text to prominently display on the generated image.'),
-  niche: z.string().optional().describe('The niche of the post (e.g., Food, Travel, Technology).'),
-  category: z.string().optional().describe('The category of the post (e.g., Recipe, Landscape, Product Review).'),
-  imageType: z.string().describe('The desired style of the image (e.g., Photography, Illustration, Modern Design).'),
+  niche: z.string().describe('The niche of the post (e.g., Food, Travel, Technology). This is required.'),
+  category: z.string().describe('The category of the post (e.g., Recipe, Landscape, Product Review). This is required.'),
+  imageType: z.string().describe('The desired artistic style of the image (e.g., Photography, Illustration, Modern Design). This is required.'),
+  postTopic: z.string().describe('The original topic or idea of the social media post, for broader context.'),
 });
 export type GeneratePostImageInput = z.infer<typeof GeneratePostImageInputSchema>;
 
@@ -46,10 +47,11 @@ const generatePostImagePrompt = ai.definePrompt({
   name: 'generatePostImagePrompt',
   input: {schema: GeneratePostImageInputSchema},
   output: {schema: GeneratePostImageOutputSchema},
-  prompt: `You are an AI assistant. Based on the social media post description, niche, category, image type, and overlay text, you will conceptualize an image.
-The image should be suitable for the post description: {{{postDescription}}}.
-It should fit the niche: {{{niche}}}.
-It should fit the category: {{{category}}}.
+  prompt: `You are an AI assistant. Based on the visual description, post topic, niche, category, image type, and overlay text, you will conceptualize an image.
+The image should be based on this visual description: {{{imageVisualPrompt}}}.
+The overall post topic is: {{{postTopic}}}.
+It must fit the niche: {{{niche}}}.
+It must fit the category: {{{category}}}.
 The style should be: {{{imageType}}}.
 It must also prominently display this text: {{{overlayText}}}.
 The output should be the image URI.`,
@@ -63,20 +65,17 @@ const generatePostImageFlow = ai.defineFlow(
   },
   async (input: GeneratePostImageInput) => {
     let imagePrompt = `You are an AI social media image generator.
-Your task is to create an image for a social media post.
-The post is generally about: "${input.postDescription}".`;
+Your primary task is to create an image based on the following detailed visual description: "${input.imageVisualPrompt}".
+This image is for a social media post related to the general topic: "${input.postTopic}".
 
-    if (input.niche) {
-      imagePrompt += `\nThe niche is "${input.niche}".`;
-    }
-    if (input.category) {
-      imagePrompt += `\nThe category is "${input.category}".`;
-    }
-    imagePrompt += `\nThe desired image style is "${input.imageType}".`;
+The image must strictly adhere to the following parameters:
+- Niche: "${input.niche}"
+- Category: "${input.category}"
+- Image Style: "${input.imageType}"
 
-    imagePrompt += `\nThe most important part is to feature the following text directly ON the image in a visually appealing, clear, and prominent way: "${input.overlayText}".
-The text should be integrated into the image's design as if it were a professional social media graphic. Consider typography, color contrast, and placement to ensure the text is readable and enhances the image.
-The overall image style should be suitable for the post description, niche, category, and specified image type. Make it engaging and high quality.`;
+The most critical visual element is to feature the following text directly ON the image in a visually appealing, clear, and prominent way: "${input.overlayText}".
+The text should be seamlessly integrated into the image's design as if it were a professional social media graphic. Pay close attention to typography, color contrast, and placement to ensure the text is highly readable and enhances the overall image.
+The overall image composition and style should be suitable for the visual prompt, niche, category, and specified image type. Aim for an engaging, high-quality, and aesthetically pleasing result.`;
     
     const {media} = await ai.generate({
       // IMPORTANT: ONLY the googleai/gemini-2.0-flash-exp model is able to generate images. You MUST use exactly this model to generate images.
@@ -91,6 +90,13 @@ The overall image style should be suitable for the post description, niche, cate
       },
     });
 
-    return {imageUri: media.url!};
+    if (!media || !media.url) {
+      throw new Error('Image generation failed or did not return a valid image URI.');
+    }
+
+    return {imageUri: media.url};
   }
 );
+
+
+    

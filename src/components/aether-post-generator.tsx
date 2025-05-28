@@ -13,8 +13,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Download, ImageIcon, Instagram, Facebook, Twitter, Edit3, RotateCcw, AlertCircle, Wand2 } from "lucide-react";
+import { Download, ImageIcon, Instagram, Facebook, Twitter, Edit3, RotateCcw, AlertCircle, Wand2, Info } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
 
 type Platform = "instagram" | "facebook" | "x";
 interface GeneratedPost extends GeneratePostContentOutput {
@@ -49,7 +51,8 @@ const imageTypeOptions = [
 ];
 
 export default function AetherPostGenerator() {
-  const [description, setDescription] = useState<string>("");
+  const [postTopic, setPostTopic] = useState<string>("");
+  const [imageVisualDescription, setImageVisualDescription] = useState<string>("");
   const [niche, setNiche] = useState<string>("");
   const [category, setCategory] = useState<string>("");
   const [imageType, setImageType] = useState<string>(imageTypeOptions[0]);
@@ -65,38 +68,58 @@ export default function AetherPostGenerator() {
     setCurrentImageUrl("https://placehold.co/600x400.png?text=Your+AI+Image+Here");
   }, []);
 
-  const handleGeneratePost = async () => {
-    if (!description.trim()) {
-      setError("Please enter a post description.");
-      return;
+  const validateInputs = (isRegeneratingImage = false) => {
+    if (!isRegeneratingImage && !postTopic.trim()) {
+      setError("Please enter a Post Topic/Idea.");
+      return false;
     }
+    if (!imageVisualDescription.trim()) {
+      setError("Please enter an Image Visual Description.");
+      return false;
+    }
+    if (!niche.trim()) {
+      setError("Niche is required.");
+      return false;
+    }
+    if (!category.trim()) {
+      setError("Category is required.");
+      return false;
+    }
+    return true;
+  };
+
+  const handleGeneratePost = async () => {
+    if (!validateInputs()) return;
+
     setIsLoading(true);
     setError(null);
     setGeneratedPost(null);
+    setEditedText("");
     setCurrentImageUrl("https://placehold.co/600x400.png?text=Generating...");
 
     try {
-      const contentResult = await generatePostContent({ description });
+      const contentResult = await generatePostContent({ description: postTopic });
       if (!contentResult || !contentResult.postText) {
         throw new Error("Failed to generate post text.");
       }
+      setEditedText(contentResult.postText);
 
       const imageInput: GeneratePostImageInput = {
-        postDescription: description,
+        imageVisualPrompt: imageVisualDescription,
         overlayText: contentResult.postText,
         niche,
         category,
         imageType,
+        postTopic: postTopic,
       };
 
       const imageResult = await generatePostImage(imageInput);
 
       if (imageResult && imageResult.imageUri) {
         setGeneratedPost({ ...contentResult, imageUri: imageResult.imageUri });
-        setEditedText(contentResult.postText);
         setCurrentImageUrl(imageResult.imageUri);
       } else {
-        throw new Error("Failed to generate complete post content or image.");
+        throw new Error("Failed to generate image for the post.");
       }
     } catch (err) {
       console.error(err);
@@ -108,10 +131,7 @@ export default function AetherPostGenerator() {
   };
 
   const handleRegenerateImage = async () => {
-    if (!description.trim()) {
-      setError("Original description is missing for image regeneration.");
-      return;
-    }
+    if (!validateInputs(true)) return;
 
     let textForImageRegen = editedText.trim();
     if (!textForImageRegen && generatedPost) {
@@ -130,11 +150,12 @@ export default function AetherPostGenerator() {
 
     try {
       const imageInput: GeneratePostImageInput = {
-        postDescription: description,
+        imageVisualPrompt: imageVisualDescription,
         overlayText: textForImageRegen,
         niche,
         category,
         imageType,
+        postTopic: postTopic,
       };
       const imageResult = await generatePostImage(imageInput);
       if (imageResult && imageResult.imageUri) {
@@ -148,7 +169,7 @@ export default function AetherPostGenerator() {
     } catch (err) {
       console.error(err);
       setError(err instanceof Error ? err.message : "An unknown error occurred during image regeneration.");
-      setCurrentImageUrl(oldImageUrl);
+      setCurrentImageUrl(oldImageUrl); // Revert to old image on error
     } finally {
       setIsImageLoading(false);
     }
@@ -184,6 +205,7 @@ export default function AetherPostGenerator() {
   }
 
   return (
+    <TooltipProvider>
     <div className="min-h-screen bg-background p-4 md:p-8">
       <header className="mb-8 text-center">
         <h1 className="text-5xl font-bold text-primary flex items-center justify-center space-x-2">
@@ -209,12 +231,44 @@ export default function AetherPostGenerator() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="description" className="text-lg">Post Description</Label>
+              <Label htmlFor="postTopic" className="text-lg flex items-center">
+                Post Topic/Idea
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="ml-2 h-4 w-4 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="max-w-xs">The main theme or subject for your post's text content and hashtags.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </Label>
               <Textarea
-                id="description"
-                placeholder="e.g., A vibrant post about a new coffee shop opening, highlighting its cozy atmosphere and specialty drinks."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                id="postTopic"
+                placeholder="e.g., Grand opening of 'The Cozy Corner' cafe."
+                value={postTopic}
+                onChange={(e) => setPostTopic(e.target.value)}
+                rows={3}
+                className="text-base"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="imageVisualDescription" className="text-lg flex items-center">
+                Image Visual Description <span className="text-destructive ml-1">*</span>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="ml-2 h-4 w-4 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="max-w-xs">Describe what you want the image to look like. Be specific for best results.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </Label>
+              <Textarea
+                id="imageVisualDescription"
+                placeholder="e.g., A steaming latte art heart on a rustic wooden table, soft morning light, a few coffee beans scattered around."
+                value={imageVisualDescription}
+                onChange={(e) => setImageVisualDescription(e.target.value)}
                 rows={4}
                 className="text-base"
               />
@@ -222,29 +276,31 @@ export default function AetherPostGenerator() {
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="niche" className="text-lg">Niche (Optional)</Label>
+                <Label htmlFor="niche" className="text-lg">Niche <span className="text-destructive ml-1">*</span></Label>
                 <Input
                   id="niche"
-                  placeholder="e.g., Food, Travel, Technology"
+                  placeholder="e.g., Food, Travel, Tech"
                   value={niche}
                   onChange={(e) => setNiche(e.target.value)}
                   className="text-base"
+                  required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="category" className="text-lg">Category (Optional)</Label>
+                <Label htmlFor="category" className="text-lg">Category <span className="text-destructive ml-1">*</span></Label>
                 <Input
                   id="category"
-                  placeholder="e.g., Recipe, Landscape, Product Review"
+                  placeholder="e.g., Coffee Shop, Mountain Landscape"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   className="text-base"
+                  required
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="imageType" className="text-lg">Image Type</Label>
+              <Label htmlFor="imageType" className="text-lg">Image Type <span className="text-destructive ml-1">*</span></Label>
               <Select value={imageType} onValueChange={(value: string) => setImageType(value)}>
                 <SelectTrigger id="imageType" className="w-full text-base">
                   <SelectValue placeholder="Select image type" />
@@ -323,7 +379,7 @@ export default function AetherPostGenerator() {
                 )}
               </div>
               <div className="mt-4 flex space-x-3">
-                <Button onClick={handleRegenerateImage} variant="outline" disabled={isLoading || isImageLoading || !description} className="flex-1">
+                <Button onClick={handleRegenerateImage} variant="outline" disabled={isLoading || isImageLoading || !imageVisualDescription || !niche || !category} className="flex-1">
                   {isImageLoading ? (
                      <>
                       <RotateCcw className="mr-2 h-4 w-4 animate-spin" />
@@ -347,7 +403,7 @@ export default function AetherPostGenerator() {
               <>
                 <div>
                   <Label htmlFor="editedText" className="text-lg">Post Text (Overlay on Image)</Label>
-                  {isLoading ? <Skeleton className="h-24 w-full mt-2" /> :
+                  {isLoading && !generatedPost ? <Skeleton className="h-24 w-full mt-2" /> :
                     <Textarea
                       id="editedText"
                       value={editedText}
@@ -360,7 +416,7 @@ export default function AetherPostGenerator() {
                 </div>
                 <div>
                   <Label className="text-lg">Hashtags</Label>
-                  {isLoading ? <Skeleton className="h-8 w-full mt-2" /> :
+                  {isLoading && !generatedPost ? <Skeleton className="h-8 w-full mt-2" /> :
                   <div className="mt-2 flex flex-wrap gap-2">
                     {generatedPost?.hashtags && generatedPost.hashtags.length > 0 ? (
                       generatedPost.hashtags.map((tag, index) => (
@@ -383,5 +439,8 @@ export default function AetherPostGenerator() {
         </Card>
       </div>
     </div>
+    </TooltipProvider>
   );
 }
+
+    
