@@ -28,7 +28,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark"> {/* Added className="dark" here */}
+    <html lang="en" className="dark">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <header className="bg-card border-b border-border sticky top-0 z-50">
           <nav className="container mx-auto px-4 h-16 flex items-center justify-between">
