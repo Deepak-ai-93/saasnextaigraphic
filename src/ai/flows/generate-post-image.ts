@@ -55,7 +55,7 @@ const generatePostImageFlow = ai.defineFlow(
   },
   async (input: GeneratePostImageInput) => {
     let imagePrompt = `You are an AI social media image generator acting as a professional graphic designer.
-Your primary task is to create an image based on the following detailed visual description: "${input.imageVisualPrompt}".
+Your primary task is to create a detailed and visually rich image based on the following visual description: "${input.imageVisualPrompt}".
 This image is for a social media post related to the general topic: "${input.postTopic}".
 
 The image must strictly adhere to the following parameters:
@@ -68,15 +68,18 @@ The image must strictly adhere to the following parameters:
     }
 
     if (input.overlayText && input.overlayText.trim() !== '') {
-      imagePrompt += `\n\n**Main Hook Text Overlay Instructions:**
-The most critical visual element on the primary image area is to feature the following AI-generated hook text: "${input.overlayText}".
-The text must be seamlessly and professionally integrated into the primary image's design, appearing as a deliberate graphic element.
-Think like a graphic designer:
+      // Emphasize generating the core image first, then integrating text.
+      imagePrompt += `\n\nFirst, focus on generating a high-quality, detailed image that perfectly matches the visual description: "${input.imageVisualPrompt}", while adhering to the Niche: "${input.niche}", Category: "${input.category}", and Image Style: "${input.imageType}".
+After this base image is established in your generation process, you will then **prominently and artistically integrate** the following AI-generated hook text onto it: "${input.overlayText}".
+
+**Hook Text Overlay Instructions (apply to the generated base image):**
+The text must be seamlessly and professionally integrated into the generated image's design, appearing as a deliberate graphic element, not an afterthought.
+Think like a graphic designer creating a polished piece for social media:
 - The text's style, color, and placement must harmonize with the primary image aesthetic, mood, and the specified niche, category, and image type.
 - Render the text in an interesting and visually engaging manner, making it a focal point while still feeling like an organic part of the complete visual.
-- Avoid a flat, 'pasted-on' look. The text should appear as if it naturally belongs in the primary image composition. Consider subtle depth, shadows, or blending effects appropriate for the image style to enhance integration and readability.
+- Avoid a flat, 'pasted-on' look. The text should appear as if it naturally belongs in the image composition. Consider subtle depth, shadows, or blending effects appropriate for the style to enhance integration and readability.
 
-Key considerations for the main hook text integration:
+Key considerations for the hook text integration:
 - Typography & Style: Pay close attention to typography. The text should not only be readable but also enhance the image's overall design quality.
   - Color Variation: Creatively apply color variations within the overlay text. For example, make one or two key words a different, complementary color, or use a subtle gradient if appropriate for the style. This should enhance visual appeal and hierarchy.
   - Font Emphasis: For added visual interest and emphasis, attempt to render approximately two important words from the hook text in a slightly different but harmonious font style (e.g., a bolder weight, a subtle script if the main font is sans-serif, or vice-versa). This should complement the primary chosen font style if one is specified.
@@ -94,10 +97,10 @@ Key considerations for the main hook text integration:
       }
       imagePrompt += `\nConsider the overall image composition, lighting, and depth to ensure the text placement and styling feel natural, engaging, and expertly integrated, making the hook an appealing and integral part of the graphic. The final result should look like a polished piece of social media content.`;
     } else {
-      imagePrompt += `\n\nGenerate a high-quality image based purely on the visual description, niche, category, image type, and post context. No text should be overlaid on this image.`;
+      imagePrompt += `\n\nGenerate a high-quality, detailed image based purely on the visual description ("${input.imageVisualPrompt}"), Niche ("${input.niche}"), Category ("${input.category}"), Image Style ("${input.imageType}"), and post context. No text should be overlaid on this image.`;
     }
     
-    imagePrompt += `\nThe overall image composition and style should be suitable for the visual prompt, niche, category, and specified image type. Aim for an engaging, high-quality, and aesthetically pleasing result that looks professionally crafted.`;
+    imagePrompt += `\n\nThe overall image composition and style should be suitable for the visual prompt, niche, category, and specified image type. Aim for an engaging, high-quality, and aesthetically pleasing result that looks professionally crafted. Ensure the image is detailed and visually rich according to these inputs.`;
     
     const {media} = await ai.generate({
       model: 'googleai/gemini-2.0-flash-exp',
@@ -118,5 +121,3 @@ Key considerations for the main hook text integration:
     return {imageUri: media.url};
   }
 );
-
-    
