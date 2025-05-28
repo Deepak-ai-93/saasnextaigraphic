@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { generatePostContent, type GeneratePostContentOutput } from "@/ai/flows/generate-post-content";
+import { generatePostContent, type GeneratePostContentInput, type GeneratePostContentOutput } from "@/ai/flows/generate-post-content";
 import { generatePostImage, type GeneratePostImageInput } from "@/ai/flows/generate-post-image";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Download, ImageIcon, Instagram, Facebook, Twitter, Edit3, RotateCcw, AlertCircle, Wand2, Info } from "lucide-react";
+import { Download, ImageIcon, Instagram, Facebook, Twitter, Edit3, RotateCcw, AlertCircle, Wand2, Info, MessageSquareQuote } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -50,12 +50,26 @@ const imageTypeOptions = [
   "Graffiti Style",
 ];
 
+const postTypeOptions = [
+  "Tips & Tricks",
+  "Educational",
+  "Awareness",
+  "Promotional",
+  "Inspirational",
+  "Question / Poll",
+  "Behind the Scenes",
+  "User-Generated Content Feature",
+  "News / Update",
+  "Storytelling",
+];
+
 export default function AetherPostGenerator() {
   const [postTopic, setPostTopic] = useState<string>("");
   const [imageVisualDescription, setImageVisualDescription] = useState<string>("");
   const [niche, setNiche] = useState<string>("");
   const [category, setCategory] = useState<string>("");
   const [imageType, setImageType] = useState<string>(imageTypeOptions[0]);
+  const [postType, setPostType] = useState<string>("");
   const [platform, setPlatform] = useState<Platform>("instagram");
   const [generatedPost, setGeneratedPost] = useState<GeneratedPost | null>(null);
   const [editedText, setEditedText] = useState<string>("");
@@ -85,6 +99,7 @@ export default function AetherPostGenerator() {
       setError("Category is required.");
       return false;
     }
+    setError(null);
     return true;
   };
 
@@ -98,7 +113,11 @@ export default function AetherPostGenerator() {
     setCurrentImageUrl("https://placehold.co/600x400.png?text=Generating...");
 
     try {
-      const contentResult = await generatePostContent({ description: postTopic });
+      const contentInput: GeneratePostContentInput = { 
+        description: postTopic,
+        postType: postType || undefined, // Pass postType if selected
+      };
+      const contentResult = await generatePostContent(contentInput);
       if (!contentResult || !contentResult.postText) {
         throw new Error("Failed to generate post text.");
       }
@@ -111,6 +130,7 @@ export default function AetherPostGenerator() {
         category,
         imageType,
         postTopic: postTopic,
+        postType: postType || undefined, // Pass postType if selected
       };
 
       const imageResult = await generatePostImage(imageInput);
@@ -156,6 +176,7 @@ export default function AetherPostGenerator() {
         category,
         imageType,
         postTopic: postTopic,
+        postType: postType || undefined, // Pass postType if selected
       };
       const imageResult = await generatePostImage(imageInput);
       if (imageResult && imageResult.imageUri) {
@@ -192,7 +213,8 @@ export default function AetherPostGenerator() {
   const getPlaceholderDataAiHint = () => {
     let hint = "";
     if (imageType) hint += imageType.toLowerCase().split(" ")[0] + " ";
-    if (niche) hint += niche.toLowerCase().split(" ")[0];
+    if (niche) hint += niche.toLowerCase().split(" ")[0] + " ";
+    if (postType) hint += postType.toLowerCase().split(" ")[0];
     if (!hint && platform) {
        switch(platform) {
         case 'instagram': hint = "lifestyle social"; break;
@@ -232,7 +254,7 @@ export default function AetherPostGenerator() {
           <CardContent className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="postTopic" className="text-lg flex items-center">
-                Post Topic/Idea
+                Post Topic/Idea <span className="text-destructive ml-1">*</span>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Info className="ml-2 h-4 w-4 text-muted-foreground cursor-help" />
@@ -249,6 +271,7 @@ export default function AetherPostGenerator() {
                 onChange={(e) => setPostTopic(e.target.value)}
                 rows={3}
                 className="text-base"
+                required
               />
             </div>
 
@@ -271,6 +294,7 @@ export default function AetherPostGenerator() {
                 onChange={(e) => setImageVisualDescription(e.target.value)}
                 rows={4}
                 className="text-base"
+                required
               />
             </div>
             
@@ -298,22 +322,50 @@ export default function AetherPostGenerator() {
                 />
               </div>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="imageType" className="text-lg">Image Type <span className="text-destructive ml-1">*</span></Label>
-              <Select value={imageType} onValueChange={(value: string) => setImageType(value)}>
-                <SelectTrigger id="imageType" className="w-full text-base">
-                  <SelectValue placeholder="Select image type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {imageTypeOptions.map((type) => (
-                    <SelectItem key={type} value={type} className="text-base">
-                      {type}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="postType" className="text-lg flex items-center">
+                  Post Type
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="ml-2 h-4 w-4 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="max-w-xs">Select the type of post to guide AI for content tone and style.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </Label>
+                <Select value={postType} onValueChange={(value: string) => setPostType(value)}>
+                  <SelectTrigger id="postType" className="w-full text-base">
+                    <SelectValue placeholder="Select post type (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {postTypeOptions.map((type) => (
+                      <SelectItem key={type} value={type} className="text-base">
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="imageType" className="text-lg">Image Type <span className="text-destructive ml-1">*</span></Label>
+                <Select value={imageType} onValueChange={(value: string) => setImageType(value)}>
+                  <SelectTrigger id="imageType" className="w-full text-base">
+                    <SelectValue placeholder="Select image type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {imageTypeOptions.map((type) => (
+                      <SelectItem key={type} value={type} className="text-base">
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+
 
             <div className="space-y-2">
               <Label htmlFor="platform" className="text-lg">Social Media Platform</Label>
@@ -402,7 +454,17 @@ export default function AetherPostGenerator() {
             {generatedPost || isLoading ? (
               <>
                 <div>
-                  <Label htmlFor="editedText" className="text-lg">Post Text (Overlay on Image)</Label>
+                  <Label htmlFor="editedText" className="text-lg flex items-center">
+                    Post Text (Overlay on Image)
+                     <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="ml-2 h-4 w-4 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="max-w-xs">This text will be overlaid on the generated image. You can edit it here. Regenerate the image to see changes.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                  </Label>
                   {isLoading && !generatedPost ? <Skeleton className="h-24 w-full mt-2" /> :
                     <Textarea
                       id="editedText"
@@ -442,5 +504,3 @@ export default function AetherPostGenerator() {
     </TooltipProvider>
   );
 }
-
-    

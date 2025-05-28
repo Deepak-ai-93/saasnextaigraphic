@@ -14,6 +14,7 @@ import {z} from 'genkit';
 
 const GeneratePostContentInputSchema = z.object({
   description: z.string().describe('The description of the desired social media post.'),
+  postType: z.string().optional().describe('The type of post (e.g., Tips, Educational, Promotional).'),
 });
 export type GeneratePostContentInput = z.infer<typeof GeneratePostContentInputSchema>;
 
@@ -32,13 +33,15 @@ const prompt = ai.definePrompt({
   input: {schema: GeneratePostContentInputSchema},
   output: {schema: GeneratePostContentOutputSchema},
   prompt: `You are an AI assistant specializing in generating engaging content for social media posts.
+{{#if postType}}
+You are crafting a "{{postType}}" post. Keep this in mind for the tone, style, and call to action.
+{{/if}}
+Based on the description provided, generate compelling post text and suggest relevant hashtags to maximize audience interaction.
 
-  Based on the description provided, generate compelling post text and suggest relevant hashtags to maximize audience interaction.
+Description: {{{description}}}
 
-  Description: {{{description}}}
-  
-  Ensure the post text is captivating and the hashtags are highly relevant to the post's content.
-  The hashtags should be an array of strings.
+Ensure the post text is captivating and the hashtags are highly relevant to the post's content{{#if postType}} and the "{{postType}}" type{{/if}}.
+The hashtags should be an array of strings.
   `,
 });
 

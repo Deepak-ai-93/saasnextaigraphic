@@ -4,7 +4,7 @@
 
 /**
  * @fileOverview Image generation flow for social media posts, with text overlay,
- * considering niche, category, image type, and visual description for highly personalized results.
+ * considering niche, category, image type, post type, and visual description for highly personalized results.
  *
  * - generatePostImage - A function that handles the image generation process.
  * - GeneratePostImageInput - The input type for the generatePostImage function.
@@ -25,6 +25,7 @@ const GeneratePostImageInputSchema = z.object({
   category: z.string().describe('The category of the post (e.g., Recipe, Landscape, Product Review). This is required.'),
   imageType: z.string().describe('The desired artistic style of the image (e.g., Photography, Illustration, Modern Design). This is required.'),
   postTopic: z.string().describe('The original topic or idea of the social media post, for broader context.'),
+  postType: z.string().optional().describe('The type of the post (e.g., Tips, Educational, Promotional) for additional context.'),
 });
 export type GeneratePostImageInput = z.infer<typeof GeneratePostImageInputSchema>;
 
@@ -43,19 +44,20 @@ export async function generatePostImage(input: GeneratePostImageInput): Promise<
 
 // This prompt definition is for consistency with the schema,
 // but the actual image generation uses a direct prompt in ai.generate below.
-const generatePostImagePrompt = ai.definePrompt({
-  name: 'generatePostImagePrompt',
-  input: {schema: GeneratePostImageInputSchema},
-  output: {schema: GeneratePostImageOutputSchema},
-  prompt: `You are an AI assistant. Based on the visual description, post topic, niche, category, image type, and overlay text, you will conceptualize an image.
-The image should be based on this visual description: {{{imageVisualPrompt}}}.
-The overall post topic is: {{{postTopic}}}.
-It must fit the niche: {{{niche}}}.
-It must fit the category: {{{category}}}.
-The style should be: {{{imageType}}}.
-It must also prominently display this text: {{{overlayText}}}.
-The output should be the image URI.`,
-});
+// const generatePostImagePrompt = ai.definePrompt({ // Commented out as direct prompt is used
+//   name: 'generatePostImagePrompt',
+//   input: {schema: GeneratePostImageInputSchema},
+//   output: {schema: GeneratePostImageOutputSchema},
+//   prompt: `You are an AI assistant. Based on the visual description, post topic, niche, category, image type, post type and overlay text, you will conceptualize an image.
+// The image should be based on this visual description: {{{imageVisualPrompt}}}.
+// The overall post topic is: {{{postTopic}}}.
+// {{#if postType}}The post is of type: {{{postType}}}.{{/if}}
+// It must fit the niche: {{{niche}}}.
+// It must fit the category: {{{category}}}.
+// The style should be: {{{imageType}}}.
+// It must also prominently display this text: {{{overlayText}}}.
+// The output should be the image URI.`,
+// });
 
 const generatePostImageFlow = ai.defineFlow(
   {
@@ -71,9 +73,13 @@ This image is for a social media post related to the general topic: "${input.pos
 The image must strictly adhere to the following parameters:
 - Niche: "${input.niche}"
 - Category: "${input.category}"
-- Image Style: "${input.imageType}"
+- Image Style: "${input.imageType}"`;
 
-The most critical visual element is to feature the following text directly ON the image in a visually appealing, clear, and prominent way: "${input.overlayText}".
+    if (input.postType) {
+      imagePrompt += `\n- Post Type Context: This image is part of a "${input.postType}" post. Consider this for the overall mood or subtle thematic elements, ensuring it complements the main visual description and overlay text.`;
+    }
+
+    imagePrompt += `\n\nThe most critical visual element is to feature the following text directly ON the image in a visually appealing, clear, and prominent way: "${input.overlayText}".
 The text should be seamlessly integrated into the image's design as if it were a professional social media graphic. Pay close attention to typography, color contrast, and placement to ensure the text is highly readable and enhances the overall image.
 The overall image composition and style should be suitable for the visual prompt, niche, category, and specified image type. Aim for an engaging, high-quality, and aesthetically pleasing result.`;
     
@@ -97,6 +103,3 @@ The overall image composition and style should be suitable for the visual prompt
     return {imageUri: media.url};
   }
 );
-
-
-    
