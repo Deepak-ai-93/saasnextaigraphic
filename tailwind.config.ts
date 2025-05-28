@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -87,8 +88,50 @@ export default {
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
   			'accordion-up': 'accordion-up 0.2s ease-out'
-  		}
+  		},
+      typography: (theme: (path: string) => string) => ({ // Added for ReactMarkdown
+        DEFAULT: {
+          css: {
+            '--tw-prose-body': theme('colors.foreground / 1'),
+            '--tw-prose-headings': theme('colors.primary / 1'),
+            '--tw-prose-lead': theme('colors.foreground / 1'),
+            '--tw-prose-links': theme('colors.accent / 1'),
+            '--tw-prose-bold': theme('colors.foreground / 1'),
+            '--tw-prose-counters': theme('colors.muted.foreground / 1'),
+            '--tw-prose-bullets': theme('colors.muted.foreground / 1'),
+            '--tw-prose-hr': theme('colors.border / 1'),
+            '--tw-prose-quotes': theme('colors.primary / 1'),
+            '--tw-prose-quote-borders': theme('colors.accent / 1'),
+            '--tw-prose-captions': theme('colors.muted.foreground / 1'),
+            '--tw-prose-code': theme('colors.accent.foreground / 1'),
+            '--tw-prose-pre-code': theme('colors.accent.foreground / 1'),
+            '--tw-prose-pre-bg': theme('colors.accent / 0.1'),
+            '--tw-prose-th-borders': theme('colors.border / 1'),
+            '--tw-prose-td-borders': theme('colors.border / 1'),
+          },
+        },
+        sm: {
+          css: {
+            p: {
+              marginTop: '0.25em',
+              marginBottom: '0.25em',
+            },
+            ul: {
+              marginTop: '0.25em',
+              marginBottom: '0.25em',
+              paddingLeft: '1.25em',
+            },
+            li: {
+              marginTop: '0.1em',
+              marginBottom: '0.1em',
+            },
+          },
+        },
+      }),
   	}
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    require('@tailwindcss/typography'), // Added for ReactMarkdown
+  ],
 } satisfies Config;
