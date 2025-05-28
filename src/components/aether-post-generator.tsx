@@ -1,14 +1,15 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { generatePostContent, type GeneratePostContentOutput } from "@/ai/flows/generate-post-content";
-import { generatePostImage, type GeneratePostImageOutput } from "@/ai/flows/generate-post-image";
+import { generatePostImage, type GeneratePostImageInput } from "@/ai/flows/generate-post-image";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -32,8 +33,26 @@ const platformAspectRatios: Record<Platform, string> = {
   x: "aspect-video", // 16:9
 };
 
+const imageTypeOptions = [
+  "Photography",
+  "Illustration",
+  "3D Render",
+  "Abstract Art",
+  "Minimalist Design",
+  "Vintage Style",
+  "Futuristic Design",
+  "Watercolor Art",
+  "Cartoon / Comic Style",
+  "Pop Art",
+  "Surrealism",
+  "Graffiti Style",
+];
+
 export default function AetherPostGenerator() {
   const [description, setDescription] = useState<string>("");
+  const [niche, setNiche] = useState<string>("");
+  const [category, setCategory] = useState<string>("");
+  const [imageType, setImageType] = useState<string>(imageTypeOptions[0]);
   const [platform, setPlatform] = useState<Platform>("instagram");
   const [generatedPost, setGeneratedPost] = useState<GeneratedPost | null>(null);
   const [editedText, setEditedText] = useState<string>("");
@@ -43,7 +62,6 @@ export default function AetherPostGenerator() {
   const [currentImageUrl, setCurrentImageUrl] = useState<string>("");
 
   useEffect(() => {
-    // Set initial placeholder image
     setCurrentImageUrl("https://placehold.co/600x400.png?text=Your+AI+Image+Here");
   }, []);
 
@@ -54,7 +72,7 @@ export default function AetherPostGenerator() {
     }
     setIsLoading(true);
     setError(null);
-    setGeneratedPost(null); // Clear previous results
+    setGeneratedPost(null);
     setCurrentImageUrl("https://placehold.co/600x400.png?text=Generating...");
 
     try {
@@ -63,11 +81,15 @@ export default function AetherPostGenerator() {
         throw new Error("Failed to generate post text.");
       }
 
-      // Use the generated post text as overlay text for the image
-      const imageResult = await generatePostImage({
+      const imageInput: GeneratePostImageInput = {
         postDescription: description,
         overlayText: contentResult.postText,
-      });
+        niche,
+        category,
+        imageType,
+      };
+
+      const imageResult = await generatePostImage(imageInput);
 
       if (imageResult && imageResult.imageUri) {
         setGeneratedPost({ ...contentResult, imageUri: imageResult.imageUri });
@@ -107,10 +129,14 @@ export default function AetherPostGenerator() {
     setCurrentImageUrl("https://placehold.co/600x400.png?text=Regenerating...");
 
     try {
-      const imageResult = await generatePostImage({ 
+      const imageInput: GeneratePostImageInput = {
         postDescription: description,
-        overlayText: textForImageRegen
-      });
+        overlayText: textForImageRegen,
+        niche,
+        category,
+        imageType,
+      };
+      const imageResult = await generatePostImage(imageInput);
       if (imageResult && imageResult.imageUri) {
         setCurrentImageUrl(imageResult.imageUri);
         if (generatedPost) {
@@ -122,7 +148,7 @@ export default function AetherPostGenerator() {
     } catch (err) {
       console.error(err);
       setError(err instanceof Error ? err.message : "An unknown error occurred during image regeneration.");
-      setCurrentImageUrl(oldImageUrl); // Revert to old image on error
+      setCurrentImageUrl(oldImageUrl);
     } finally {
       setIsImageLoading(false);
     }
@@ -143,12 +169,18 @@ export default function AetherPostGenerator() {
   };
   
   const getPlaceholderDataAiHint = () => {
-    switch(platform) {
-      case 'instagram': return "lifestyle social";
-      case 'facebook': return "community connection";
-      case 'x': return "news update";
-      default: return "social media";
+    let hint = "";
+    if (imageType) hint += imageType.toLowerCase().split(" ")[0] + " ";
+    if (niche) hint += niche.toLowerCase().split(" ")[0];
+    if (!hint && platform) {
+       switch(platform) {
+        case 'instagram': hint = "lifestyle social"; break;
+        case 'facebook': hint = "community connection"; break;
+        case 'x': hint = "news update"; break;
+        default: hint = "social media";
+      }
     }
+    return hint.trim() || "abstract background";
   }
 
   return (
@@ -183,9 +215,48 @@ export default function AetherPostGenerator() {
                 placeholder="e.g., A vibrant post about a new coffee shop opening, highlighting its cozy atmosphere and specialty drinks."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                rows={5}
+                rows={4}
                 className="text-base"
               />
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="niche" className="text-lg">Niche (Optional)</Label>
+                <Input
+                  id="niche"
+                  placeholder="e.g., Food, Travel, Technology"
+                  value={niche}
+                  onChange={(e) => setNiche(e.target.value)}
+                  className="text-base"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="category" className="text-lg">Category (Optional)</Label>
+                <Input
+                  id="category"
+                  placeholder="e.g., Recipe, Landscape, Product Review"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="text-base"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="imageType" className="text-lg">Image Type</Label>
+              <Select value={imageType} onValueChange={(value: string) => setImageType(value)}>
+                <SelectTrigger id="imageType" className="w-full text-base">
+                  <SelectValue placeholder="Select image type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {imageTypeOptions.map((type) => (
+                    <SelectItem key={type} value={type} className="text-base">
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
@@ -243,11 +314,11 @@ export default function AetherPostGenerator() {
                     src={currentImageUrl || `https://placehold.co/600x400.png?text=Your+AI+Image+Here`}
                     alt="Generated post image"
                     width={600}
-                    height={platform === 'instagram' ? 600 : (platform === 'facebook' ? 315 : 338) } // Approximate heights for aspect ratios
+                    height={platform === 'instagram' ? 600 : (platform === 'facebook' ? 315 : 338) }
                     className="object-cover w-full h-full"
                     data-ai-hint={getPlaceholderDataAiHint()}
                     onError={() => setCurrentImageUrl(`https://placehold.co/600x400.png?text=Error+Loading+Image`)}
-                    unoptimized={currentImageUrl.startsWith('data:image')} // Prevent optimization for data URIs
+                    unoptimized={currentImageUrl.startsWith('data:image')}
                   />
                 )}
               </div>
@@ -275,7 +346,7 @@ export default function AetherPostGenerator() {
             {generatedPost || isLoading ? (
               <>
                 <div>
-                  <Label htmlFor="editedText" className="text-lg">Post Text</Label>
+                  <Label htmlFor="editedText" className="text-lg">Post Text (Overlay on Image)</Label>
                   {isLoading ? <Skeleton className="h-24 w-full mt-2" /> :
                     <Textarea
                       id="editedText"
@@ -283,7 +354,7 @@ export default function AetherPostGenerator() {
                       onChange={(e) => setEditedText(e.target.value)}
                       rows={6}
                       className="mt-2 text-base"
-                      placeholder="Generated post text will appear here... This text will be overlaid on the image."
+                      placeholder="This text will be overlaid on the image. Edit if needed."
                     />
                   }
                 </div>
@@ -314,4 +385,3 @@ export default function AetherPostGenerator() {
     </div>
   );
 }
-

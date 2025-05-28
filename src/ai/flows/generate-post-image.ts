@@ -3,7 +3,8 @@
 'use server';
 
 /**
- * @fileOverview Image generation flow for social media posts, with text overlay.
+ * @fileOverview Image generation flow for social media posts, with text overlay,
+ * considering niche, category, and image type for more personalized results.
  *
  * - generatePostImage - A function that handles the image generation process.
  * - GeneratePostImageInput - The input type for the generatePostImage function.
@@ -20,6 +21,9 @@ const GeneratePostImageInputSchema = z.object({
   overlayText: z
     .string()
     .describe('The text to prominently display on the generated image.'),
+  niche: z.string().optional().describe('The niche of the post (e.g., Food, Travel, Technology).'),
+  category: z.string().optional().describe('The category of the post (e.g., Recipe, Landscape, Product Review).'),
+  imageType: z.string().describe('The desired style of the image (e.g., Photography, Illustration, Modern Design).'),
 });
 export type GeneratePostImageInput = z.infer<typeof GeneratePostImageInputSchema>;
 
@@ -42,8 +46,11 @@ const generatePostImagePrompt = ai.definePrompt({
   name: 'generatePostImagePrompt',
   input: {schema: GeneratePostImageInputSchema},
   output: {schema: GeneratePostImageOutputSchema},
-  prompt: `You are an AI assistant. Based on the social media post description and overlay text, you will conceptualize an image.
+  prompt: `You are an AI assistant. Based on the social media post description, niche, category, image type, and overlay text, you will conceptualize an image.
 The image should be suitable for the post description: {{{postDescription}}}.
+It should fit the niche: {{{niche}}}.
+It should fit the category: {{{category}}}.
+The style should be: {{{imageType}}}.
 It must also prominently display this text: {{{overlayText}}}.
 The output should be the image URI.`,
 });
@@ -55,17 +62,28 @@ const generatePostImageFlow = ai.defineFlow(
     outputSchema: GeneratePostImageOutputSchema,
   },
   async (input: GeneratePostImageInput) => {
+    let imagePrompt = `You are an AI social media image generator.
+Your task is to create an image for a social media post.
+The post is generally about: "${input.postDescription}".`;
+
+    if (input.niche) {
+      imagePrompt += `\nThe niche is "${input.niche}".`;
+    }
+    if (input.category) {
+      imagePrompt += `\nThe category is "${input.category}".`;
+    }
+    imagePrompt += `\nThe desired image style is "${input.imageType}".`;
+
+    imagePrompt += `\nThe most important part is to feature the following text directly ON the image in a visually appealing, clear, and prominent way: "${input.overlayText}".
+The text should be integrated into the image's design as if it were a professional social media graphic. Consider typography, color contrast, and placement to ensure the text is readable and enhances the image.
+The overall image style should be suitable for the post description, niche, category, and specified image type. Make it engaging and high quality.`;
+    
     const {media} = await ai.generate({
       // IMPORTANT: ONLY the googleai/gemini-2.0-flash-exp model is able to generate images. You MUST use exactly this model to generate images.
       model: 'googleai/gemini-2.0-flash-exp',
       prompt: [
         {
-          text: `You are an AI social media image generator.
-Your task is to create an image for a social media post.
-The post is generally about: "${input.postDescription}".
-The most important part is to feature the following text directly ON the image in a visually appealing, clear, and prominent way: "${input.overlayText}".
-The text should be integrated into the image's design as if it were a professional social media graphic. Consider typography, color contrast, and placement to ensure the text is readable and enhances the image.
-The image style should be suitable for the post description.`,
+          text: imagePrompt,
         },
       ],
       config: {
@@ -76,4 +94,3 @@ The image style should be suitable for the post description.`,
     return {imageUri: media.url!};
   }
 );
-
