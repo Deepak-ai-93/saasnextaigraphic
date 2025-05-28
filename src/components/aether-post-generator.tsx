@@ -57,14 +57,19 @@ export default function AetherPostGenerator() {
     setGeneratedPost(null); // Clear previous results
     setCurrentImageUrl("https://placehold.co/600x400.png?text=Generating...");
 
-
     try {
-      const [contentResult, imageResult] = await Promise.all([
-        generatePostContent({ description }),
-        generatePostImage({ postDescription: description }),
-      ]);
+      const contentResult = await generatePostContent({ description });
+      if (!contentResult || !contentResult.postText) {
+        throw new Error("Failed to generate post text.");
+      }
 
-      if (contentResult && imageResult && imageResult.imageUri) {
+      // Use the generated post text as overlay text for the image
+      const imageResult = await generatePostImage({
+        postDescription: description,
+        overlayText: contentResult.postText,
+      });
+
+      if (imageResult && imageResult.imageUri) {
         setGeneratedPost({ ...contentResult, imageUri: imageResult.imageUri });
         setEditedText(contentResult.postText);
         setCurrentImageUrl(imageResult.imageUri);
@@ -81,17 +86,31 @@ export default function AetherPostGenerator() {
   };
 
   const handleRegenerateImage = async () => {
-    if (!description.trim()) { // Use original description for regeneration
+    if (!description.trim()) {
       setError("Original description is missing for image regeneration.");
       return;
     }
+
+    let textForImageRegen = editedText.trim();
+    if (!textForImageRegen && generatedPost) {
+        textForImageRegen = generatedPost.postText.trim();
+    }
+
+    if (!textForImageRegen) {
+        setError("Please provide text for the image overlay in the 'Post Text' field before regenerating the image.");
+        return;
+    }
+
     setIsImageLoading(true);
     setError(null);
     const oldImageUrl = currentImageUrl;
     setCurrentImageUrl("https://placehold.co/600x400.png?text=Regenerating...");
 
     try {
-      const imageResult = await generatePostImage({ postDescription: description });
+      const imageResult = await generatePostImage({ 
+        postDescription: description,
+        overlayText: textForImageRegen
+      });
       if (imageResult && imageResult.imageUri) {
         setCurrentImageUrl(imageResult.imageUri);
         if (generatedPost) {
@@ -116,8 +135,7 @@ export default function AetherPostGenerator() {
     }
     const link = document.createElement("a");
     link.href = currentImageUrl;
-    // Extract filename from data URI if possible, or use a default
-    const filename = currentImageUrl.match(/filename=([^;]+)/)?.[1] || `aetherpost-${platform}-${Date.now()}.png`;
+    const filename = `aetherpost-${platform}-${Date.now()}.png`;
     link.download = filename;
     document.body.appendChild(link);
     link.click();
@@ -229,6 +247,7 @@ export default function AetherPostGenerator() {
                     className="object-cover w-full h-full"
                     data-ai-hint={getPlaceholderDataAiHint()}
                     onError={() => setCurrentImageUrl(`https://placehold.co/600x400.png?text=Error+Loading+Image`)}
+                    unoptimized={currentImageUrl.startsWith('data:image')} // Prevent optimization for data URIs
                   />
                 )}
               </div>
@@ -264,7 +283,7 @@ export default function AetherPostGenerator() {
                       onChange={(e) => setEditedText(e.target.value)}
                       rows={6}
                       className="mt-2 text-base"
-                      placeholder="Generated post text will appear here..."
+                      placeholder="Generated post text will appear here... This text will be overlaid on the image."
                     />
                   }
                 </div>
@@ -295,3 +314,4 @@ export default function AetherPostGenerator() {
     </div>
   );
 }
+
