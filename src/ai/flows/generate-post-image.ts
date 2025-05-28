@@ -54,7 +54,7 @@ const generatePostImageFlow = ai.defineFlow(
     outputSchema: GeneratePostImageOutputSchema,
   },
   async (input: GeneratePostImageInput) => {
-    let imagePrompt = `You are an AI social media image generator.
+    let imagePrompt = `You are an AI social media image generator acting as a professional graphic designer.
 Your primary task is to create an image based on the following detailed visual description: "${input.imageVisualPrompt}".
 This image is for a social media post related to the general topic: "${input.postTopic}".
 
@@ -69,31 +69,34 @@ The image must strictly adhere to the following parameters:
 
     if (input.overlayText && input.overlayText.trim() !== '') {
       imagePrompt += `\n\nThe most critical visual element is to feature the following AI-generated hook text directly ON the image: "${input.overlayText}".
-The text should be seamlessly integrated into the image's design as if it were a professional social media graphic.
-Render the text in an interesting and visually engaging manner, making it a focal point.
+The text must be seamlessly and professionally integrated into the image's design, appearing as a deliberate graphic element, not merely text pasted on top.
+Think like a graphic designer:
+- The text's style, color, and placement must harmonize with the overall image aesthetic, mood, and the specified niche, category, and image type.
+- Render the text in an interesting and visually engaging manner, making it a focal point while still feeling like an organic part of the complete visual.
+- Avoid a flat, 'pasted-on' look. The text should appear as if it naturally belongs in the image composition. Consider subtle depth, shadows, or blending effects appropriate for the image style to enhance integration and readability.
 
-Key considerations for the overlay text:
-- Typography & Style: Pay close attention to typography to ensure the text is highly readable and enhances the overall image.
-  - Color Variation: Creatively apply color variations within the overlay text. For example, you might make one or two key words a different, complementary color from the main text color, or use a subtle gradient if appropriate for the style. This should enhance visual appeal.
-  - Font Emphasis: For added visual interest and emphasis, attempt to render approximately two important words from the hook text in a slightly different but harmonious font style (e.g., a bolder weight, a subtle script if the main font is sans-serif, or vice-versa) compared to the rest of the overlay text. This should complement the primary chosen font style if one is specified.
+Key considerations for the overlay text integration:
+- Typography & Style: Pay close attention to typography. The text should not only be readable but also enhance the image's overall design quality.
+  - Color Variation: Creatively apply color variations within the overlay text. For example, make one or two key words a different, complementary color, or use a subtle gradient if appropriate for the style. This should enhance visual appeal and hierarchy.
+  - Font Emphasis: For added visual interest and emphasis, attempt to render approximately two important words from the hook text in a slightly different but harmonious font style (e.g., a bolder weight, a subtle script if the main font is sans-serif, or vice-versa). This should complement the primary chosen font style if one is specified.
   - Readability: Above all, ensure the text remains clear, legible, and well-contrasted against the image background.
 `;
 
       if (input.overlayFontStyle) {
-        imagePrompt += `\n- Primary Text Font Style: The overall text should generally adhere to a style best described as '${input.overlayFontStyle}'. The font emphasis for specific words should be a variation or complement to this primary style.`;
+        imagePrompt += `\n- Primary Text Font Style: The overall text should generally adhere to a style best described as '${input.overlayFontStyle}'. The font emphasis for specific words should be a variation or complement to this primary style. Ensure this chosen style is applied professionally.`;
       }
       if (input.overlayAlignment) {
-        imagePrompt += `\n- Text Alignment: Position the text on the image according to '${input.overlayAlignment}'. For example, if 'Top Right' is specified, place it in the top-right area. If 'Middle Center', place it centrally.`;
+        imagePrompt += `\n- Text Alignment: Position the text on the image according to '${input.overlayAlignment}'. Ensure this placement considers the image's composition for optimal visual balance and impact.`;
       }
       if (input.overlayFontSize) {
-        imagePrompt += `\n- Text Font Size: The text should appear in a '${input.overlayFontSize}' relative size. 'Large' or 'Extra Large' should be very prominent, 'Small' should be more subtle but still readable. 'Medium' is a balanced default.`;
+        imagePrompt += `\n- Text Font Size: The text should appear in a '${input.overlayFontSize}' relative size. 'Large' or 'Extra Large' should be very prominent, 'Small' should be more subtle but still readable. 'Medium' is a balanced default. The size should feel intentional within the design.`;
       }
-      imagePrompt += `\nConsider the overall image composition to ensure the text placement and styling feel natural and engaging, making the hook an integral and appealing part of the graphic.`;
+      imagePrompt += `\nConsider the overall image composition, lighting, and depth to ensure the text placement and styling feel natural, engaging, and expertly integrated, making the hook an appealing and integral part of the graphic. The final result should look like a polished piece of social media content.`;
     } else {
       imagePrompt += `\n\nGenerate a high-quality image based purely on the visual description, niche, category, image type, and post context. No text should be overlaid on this image.`;
     }
     
-    imagePrompt += `\nThe overall image composition and style should be suitable for the visual prompt, niche, category, and specified image type. Aim for an engaging, high-quality, and aesthetically pleasing result.`;
+    imagePrompt += `\nThe overall image composition and style should be suitable for the visual prompt, niche, category, and specified image type. Aim for an engaging, high-quality, and aesthetically pleasing result that looks professionally crafted.`;
     
     const {media} = await ai.generate({
       model: 'googleai/gemini-2.0-flash-exp',
