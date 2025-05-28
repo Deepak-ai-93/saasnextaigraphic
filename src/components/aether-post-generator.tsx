@@ -284,7 +284,6 @@ export default function AetherPostGenerator() {
     if (!hint && postTopic) {
         hint = postTopic.toLowerCase().split(/\s+/).slice(0, 2).join(" ");
     }
-     // Max 2 words from here
     if (!hint && niche) hint += niche.toLowerCase().split(" ")[0] + " ";
     if (!hint && category) hint += category.toLowerCase().split(" ")[0];
     
@@ -302,9 +301,9 @@ export default function AetherPostGenerator() {
   return (
     <TooltipProvider>
     <div className="min-h-screen bg-background p-4 md:p-8">
-      <header className="mb-6 md:mb-8 text-center">
-        <h1 className="text-4xl md:text-5xl font-bold text-primary flex items-center justify-center space-x-2">
-          <Wand2 size={40} className="text-accent md:size-48" />
+      <header className="mb-6 md:mb-10 text-center">
+        <h1 className="text-4xl md:text-5xl font-bold text-primary flex items-center justify-center">
+          <Wand2 className="h-8 w-8 md:h-10 md:w-10 mr-3 text-accent" />
           <span>AetherPost</span>
         </h1>
         <p className="text-muted-foreground mt-2 text-base md:text-lg">AI-Powered Social Media Content Creation</p>
@@ -318,8 +317,8 @@ export default function AetherPostGenerator() {
         </Alert>
       )}
 
-      <div className="grid grid-cols-1 gap-6 md:gap-8 max-w-7xl mx-auto">
-        <Card className="shadow-lg">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 md:gap-8 max-w-7xl mx-auto">
+        <Card className="shadow-lg lg:col-span-2">
           <CardHeader>
             <CardTitle className="text-xl md:text-2xl flex items-center"><Edit3 className="mr-2 h-5 w-5 md:h-6 md:w-6 text-primary" />Create Your Post</CardTitle>
             <CardDescription>Describe your ideal post and let AI do the magic!</CardDescription>
@@ -541,7 +540,7 @@ export default function AetherPostGenerator() {
           </CardContent>
         </Card>
 
-        <Card className="shadow-lg">
+        <Card className="shadow-lg lg:col-span-3">
           <CardHeader>
             <CardTitle className="text-xl md:text-2xl flex items-center"><ImageIcon className="mr-2 h-5 w-5 md:h-6 md:w-6 text-primary" />Post Preview & Edit</CardTitle>
              <CardDescription>Review and refine your AI-generated content.</CardDescription>
