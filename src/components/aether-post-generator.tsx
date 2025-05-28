@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Download, ImageIcon, Instagram, Facebook, Twitter, Edit3, RotateCcw, AlertCircle, Wand2, Info, MessageSquareQuote, Quote, Palette, AlignCenter, Type, Building, Phone } from "lucide-react";
+import { Download, ImageIcon, Instagram, Facebook, Twitter, Edit3, RotateCcw, AlertCircle, Wand2, Info, MessageSquareQuote, Quote, Palette, AlignCenter, Type } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
@@ -112,9 +112,6 @@ export default function AetherPostGenerator() {
   const [overlayAlignment, setOverlayAlignment] = useState<string>(overlayAlignmentOptions[4]); // Middle Center
   const [overlayFontSize, setOverlayFontSize] = useState<string>(overlayFontSizeOptions[1]); // Medium
 
-  const [logoDataUri, setLogoDataUri] = useState<string | null>(null);
-  const [contactNumber, setContactNumber] = useState<string>("");
-
   const [platform, setPlatform] = useState<Platform>("instagram");
   const [generatedPost, setGeneratedPost] = useState<GeneratedPost | null>(null);
   const [editedPostText, setEditedPostText] = useState<string>(""); 
@@ -126,19 +123,6 @@ export default function AetherPostGenerator() {
   useEffect(() => {
     setCurrentImageUrl("https://placehold.co/600x400.png?text=Your+AI+Image+Here");
   }, []);
-
-  const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setLogoDataUri(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    } else {
-      setLogoDataUri(null);
-    }
-  };
 
   const validateInputs = (isRegeneratingImage = false) => {
     if (!postTopic.trim()) {
@@ -206,8 +190,6 @@ export default function AetherPostGenerator() {
         overlayFontStyle: overlayFontStyle || undefined,
         overlayAlignment: overlayAlignment || undefined,
         overlayFontSize: overlayFontSize || undefined,
-        logoDataUri: logoDataUri || undefined,
-        contactNumber: contactNumber || undefined,
       };
 
       const imageResult = await generatePostImage(imageInput);
@@ -263,8 +245,6 @@ export default function AetherPostGenerator() {
         overlayFontStyle: overlayFontStyle || undefined,
         overlayAlignment: overlayAlignment || undefined,
         overlayFontSize: overlayFontSize || undefined,
-        logoDataUri: logoDataUri || undefined,
-        contactNumber: contactNumber || undefined,
       };
       const imageResult = await generatePostImage(imageInput);
       if (imageResult && imageResult.imageUri) {
@@ -282,7 +262,8 @@ export default function AetherPostGenerator() {
       } else {
         throw new Error("Failed to regenerate image.");
       }
-    } catch (err) {
+    } catch (err)
+     {
       console.error(err);
       setError(err instanceof Error ? err.message : "An unknown error occurred during image regeneration.");
       setCurrentImageUrl(oldImageUrl);
@@ -374,6 +355,7 @@ export default function AetherPostGenerator() {
                 onChange={(e) => setPostTopic(e.target.value)}
                 rows={3}
                 required
+                className="text-sm"
               />
             </div>
 
@@ -396,6 +378,7 @@ export default function AetherPostGenerator() {
                 onChange={(e) => setImageVisualDescription(e.target.value)}
                 rows={3}
                 required
+                className="text-sm"
               />
             </div>
             
@@ -408,6 +391,7 @@ export default function AetherPostGenerator() {
                   value={niche}
                   onChange={(e) => setNiche(e.target.value)}
                   required
+                  className="text-sm"
                 />
               </div>
               <div className="space-y-2">
@@ -418,6 +402,7 @@ export default function AetherPostGenerator() {
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   required
+                  className="text-sm"
                 />
               </div>
             </div>
@@ -571,49 +556,6 @@ export default function AetherPostGenerator() {
           </CardContent>
         </Card>
         
-        {/* Personalization Card */}
-        <Card className="shadow-lg lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-xl md:text-2xl flex items-center">
-              <Building className="mr-2 h-5 w-5 md:h-6 md:w-6 text-primary" />
-              Personalize Your Post (Optional)
-            </CardTitle>
-            <CardDescription>Add a logo and contact number to be framed on your image.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4 md:space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="logoUpload" className="text-base font-medium">Upload Logo</Label>
-              <Input
-                id="logoUpload"
-                type="file"
-                accept="image/png, image/jpeg, image/webp, image/svg+xml"
-                onChange={handleLogoChange}
-                className="text-sm"
-              />
-              {logoDataUri && (
-                <div className="mt-2 p-2 border rounded-md inline-block bg-muted/50">
-                  <Image src={logoDataUri} alt="Logo preview" width={80} height={80} className="max-h-20 object-contain rounded" />
-                </div>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="contactNumber" className="text-base font-medium">Contact Number</Label>
-              <Input
-                id="contactNumber"
-                type="text"
-                placeholder="e.g., +1 234-567-8900"
-                value={contactNumber}
-                onChange={(e) => setContactNumber(e.target.value)}
-                className="text-sm"
-              />
-            </div>
-             <p className="text-xs text-muted-foreground">
-                Note: Adding a logo/contact will instruct the AI to create a framed area on the image. Results may vary.
-            </p>
-          </CardContent>
-        </Card>
-
-
         <Card className="shadow-lg lg:col-span-3">
           <CardHeader>
             <CardTitle className="text-xl md:text-2xl flex items-center"><ImageIcon className="mr-2 h-5 w-5 md:h-6 md:w-6 text-primary" />Post Preview &amp; Edit</CardTitle>
