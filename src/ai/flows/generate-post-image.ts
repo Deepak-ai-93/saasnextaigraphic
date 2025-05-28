@@ -4,7 +4,8 @@
 
 /**
  * @fileOverview Image generation flow for social media posts, with optional text overlay,
- * considering niche, category, image type, post topic, and visual description for highly personalized results.
+ * considering niche, category, image type, post topic, visual description, and overlay text styling
+ * for highly personalized results.
  *
  * - generatePostImage - A function that handles the image generation process.
  * - GeneratePostImageInput - The input type for the generatePostImage function.
@@ -27,6 +28,9 @@ const GeneratePostImageInputSchema = z.object({
   imageType: z.string().describe('The desired artistic style of the image (e.g., Photography, Illustration, Modern Design). This is required.'),
   postTopic: z.string().describe('The original topic or idea of the social media post, for broader context.'),
   postType: z.string().optional().describe('The type of the post (e.g., Tips, Educational, Promotional) for additional context.'),
+  overlayFontStyle: z.string().optional().describe('The desired font style for the overlay text (e.g., Modern & Clean, Elegant Script, Magazine Headline).'),
+  overlayAlignment: z.string().optional().describe('The alignment of the overlay text on the image (e.g., Top Left, Middle Center, Bottom Right).'),
+  overlayFontSize: z.string().optional().describe('The relative font size for the overlay text (e.g., Small, Medium, Large, Extra Large).'),
 });
 export type GeneratePostImageInput = z.infer<typeof GeneratePostImageInputSchema>;
 
@@ -64,8 +68,19 @@ The image must strictly adhere to the following parameters:
     }
 
     if (input.overlayText && input.overlayText.trim() !== '') {
-      imagePrompt += `\n\nThe most critical visual element is to feature the following AI-generated hook text directly ON the image in a visually appealing, clear, and prominent way: "${input.overlayText}".
+      imagePrompt += `\n\nThe most critical visual element is to feature the following AI-generated hook text directly ON the image: "${input.overlayText}".
 The text should be seamlessly integrated into the image's design as if it were a professional social media graphic. Pay close attention to typography, color contrast, and placement to ensure the text is highly readable and enhances the overall image.`;
+
+      if (input.overlayFontStyle) {
+        imagePrompt += `\n- Text Font Style: Render the text in a style best described as '${input.overlayFontStyle}'. Ensure it is legible and complements the image aesthetic.`;
+      }
+      if (input.overlayAlignment) {
+        imagePrompt += `\n- Text Alignment: Position the text on the image according to '${input.overlayAlignment}'. For example, if 'Top Right' is specified, place it in the top-right area. If 'Middle Center', place it centrally.`;
+      }
+      if (input.overlayFontSize) {
+        imagePrompt += `\n- Text Font Size: The text should appear in a '${input.overlayFontSize}' relative size. 'Large' or 'Extra Large' should be very prominent, 'Small' should be more subtle but still readable. 'Medium' is a balanced default.`;
+      }
+      imagePrompt += `\nConsider the overall image composition to ensure the text placement and styling feel natural and engaging.`
     } else {
       imagePrompt += `\n\nGenerate a high-quality image based purely on the visual description, niche, category, image type, and post context. No text should be overlaid on this image.`;
     }
@@ -91,3 +106,4 @@ The text should be seamlessly integrated into the image's design as if it were a
     return {imageUri: media.url};
   }
 );
+

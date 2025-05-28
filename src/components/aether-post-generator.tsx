@@ -14,9 +14,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Download, ImageIcon, Instagram, Facebook, Twitter, Edit3, RotateCcw, AlertCircle, Wand2, Info, MessageSquareQuote, Quote } from "lucide-react";
+import { Download, ImageIcon, Instagram, Facebook, Twitter, Edit3, RotateCcw, AlertCircle, Wand2, Info, MessageSquareQuote, Quote, Palette, AlignCenter, Type } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Separator } from "@/components/ui/separator";
 
 
 type Platform = "instagram" | "facebook" | "x";
@@ -65,15 +66,43 @@ const postTypeOptions = [
   "Storytelling",
 ];
 
+const overlayFontStyleOptions = [
+  "Modern & Clean",
+  "Elegant Script",
+  "Bold Impactful",
+  "Playful Casual",
+  "Retro Vintage",
+  "Magazine Headline",
+  "Handwritten",
+  "Futuristic Techy",
+  "Minimalist Sans-Serif",
+  "Classic Serif",
+];
+
+const overlayAlignmentOptions = [
+  "Top Left", "Top Center", "Top Right",
+  "Middle Left", "Middle Center", "Middle Right",
+  "Bottom Left", "Bottom Center", "Bottom Right",
+];
+
+const overlayFontSizeOptions = [
+  "Small", "Medium", "Large", "Extra Large",
+];
+
+
 export default function AetherPostGenerator() {
   const [postTopic, setPostTopic] = useState<string>("");
   const [imageVisualDescription, setImageVisualDescription] = useState<string>("");
-  // const [imageOverlayText, setImageOverlayText] = useState<string>(""); // Manual overlay text removed
   const [aiGeneratedHook, setAiGeneratedHook] = useState<string>("");
   const [niche, setNiche] = useState<string>("");
   const [category, setCategory] = useState<string>("");
   const [imageType, setImageType] = useState<string>(imageTypeOptions[0]);
   const [postType, setPostType] = useState<string>("");
+
+  const [overlayFontStyle, setOverlayFontStyle] = useState<string>(overlayFontStyleOptions[0]);
+  const [overlayAlignment, setOverlayAlignment] = useState<string>(overlayAlignmentOptions[4]); // Middle Center
+  const [overlayFontSize, setOverlayFontSize] = useState<string>(overlayFontSizeOptions[1]); // Medium
+
   const [platform, setPlatform] = useState<Platform>("instagram");
   const [generatedPost, setGeneratedPost] = useState<GeneratedPost | null>(null);
   const [editedPostText, setEditedPostText] = useState<string>(""); // For the main post body
@@ -149,6 +178,9 @@ export default function AetherPostGenerator() {
         imageType,
         postTopic: postTopic,
         postType: postType || undefined,
+        overlayFontStyle: overlayFontStyle || undefined,
+        overlayAlignment: overlayAlignment || undefined,
+        overlayFontSize: overlayFontSize || undefined,
       };
 
       const imageResult = await generatePostImage(imageInput);
@@ -175,10 +207,9 @@ export default function AetherPostGenerator() {
     setError(null);
     const oldImageUrl = currentImageUrl;
     setCurrentImageUrl("https://placehold.co/600x400.png?text=Regenerating...");
-    let currentHookText = generatedPost?.hookText || aiGeneratedHook; // Use existing hook if available
+    let currentHookText = generatedPost?.hookText || aiGeneratedHook; 
 
     try {
-       // Regenerate hook if not already present or if desired for full regen
       if (!currentHookText) {
         const hookInput: GenerateOverlayHookInput = {
             postTopic,
@@ -194,7 +225,6 @@ export default function AetherPostGenerator() {
         setAiGeneratedHook(currentHookText);
       }
 
-
       const imageInput: GeneratePostImageInput = {
         imageVisualPrompt: imageVisualDescription,
         overlayText: currentHookText,
@@ -203,16 +233,19 @@ export default function AetherPostGenerator() {
         imageType,
         postTopic: postTopic,
         postType: postType || undefined,
+        overlayFontStyle: overlayFontStyle || undefined,
+        overlayAlignment: overlayAlignment || undefined,
+        overlayFontSize: overlayFontSize || undefined,
       };
       const imageResult = await generatePostImage(imageInput);
       if (imageResult && imageResult.imageUri) {
         setCurrentImageUrl(imageResult.imageUri);
         if (generatedPost) {
           setGeneratedPost(prev => prev ? {...prev, imageUri: imageResult.imageUri, hookText: currentHookText!} : null);
-        } else if (editedPostText) { // If only content was generated before
+        } else if (editedPostText) { 
           setGeneratedPost({ 
             postText: editedPostText, 
-            hashtags: [], // Or fetch/keep existing if available
+            hashtags: [], 
             imageUri: imageResult.imageUri,
             hookText: currentHookText!
           });
@@ -369,11 +402,12 @@ export default function AetherPostGenerator() {
                     </TooltipContent>
                   </Tooltip>
                 </Label>
-                <Select value={postType} onValueChange={(value: string) => setPostType(value)}>
+                <Select value={postType} onValueChange={(value: string) => setPostType(value === "---" ? "" : value)}>
                   <SelectTrigger id="postType" className="w-full text-base">
                     <SelectValue placeholder="Select post type (optional)" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="---" className="text-base text-muted-foreground">Clear selection</SelectItem>
                     {postTypeOptions.map((type) => (
                       <SelectItem key={type} value={type} className="text-base">
                         {type}
@@ -398,6 +432,71 @@ export default function AetherPostGenerator() {
                 </Select>
               </div>
             </div>
+
+            <Separator />
+            <div>
+                <h3 className="text-lg font-medium mb-3 flex items-center"><Palette className="mr-2 h-5 w-5 text-primary" />Overlay Text Styling</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="overlayFontStyle" className="text-base flex items-center">
+                            Font Style
+                            <Tooltip>
+                                <TooltipTrigger asChild><Info className="ml-1 h-4 w-4 text-muted-foreground cursor-help" /></TooltipTrigger>
+                                <TooltipContent><p className="max-w-xs">Suggests a font style for the text on the image.</p></TooltipContent>
+                            </Tooltip>
+                        </Label>
+                        <Select value={overlayFontStyle} onValueChange={setOverlayFontStyle}>
+                            <SelectTrigger id="overlayFontStyle" className="w-full text-base">
+                                <SelectValue placeholder="Select font style" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {overlayFontStyleOptions.map((style) => (
+                                <SelectItem key={style} value={style} className="text-base">{style}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="overlayAlignment" className="text-base flex items-center">
+                            Alignment
+                             <Tooltip>
+                                <TooltipTrigger asChild><Info className="ml-1 h-4 w-4 text-muted-foreground cursor-help" /></TooltipTrigger>
+                                <TooltipContent><p className="max-w-xs">Suggests where the text should be placed on the image.</p></TooltipContent>
+                            </Tooltip>
+                        </Label>
+                        <Select value={overlayAlignment} onValueChange={setOverlayAlignment}>
+                            <SelectTrigger id="overlayAlignment" className="w-full text-base">
+                                <SelectValue placeholder="Select alignment" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {overlayAlignmentOptions.map((align) => (
+                                <SelectItem key={align} value={align} className="text-base">{align}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="overlayFontSize" className="text-base flex items-center">
+                            Font Size
+                             <Tooltip>
+                                <TooltipTrigger asChild><Info className="ml-1 h-4 w-4 text-muted-foreground cursor-help" /></TooltipTrigger>
+                                <TooltipContent><p className="max-w-xs">Suggests a relative size for the text on the image.</p></TooltipContent>
+                            </Tooltip>
+                        </Label>
+                        <Select value={overlayFontSize} onValueChange={setOverlayFontSize}>
+                            <SelectTrigger id="overlayFontSize" className="w-full text-base">
+                                <SelectValue placeholder="Select font size" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {overlayFontSizeOptions.map((size) => (
+                                <SelectItem key={size} value={size} className="text-base">{size}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+            </div>
+            <Separator />
 
 
             <div className="space-y-2">
