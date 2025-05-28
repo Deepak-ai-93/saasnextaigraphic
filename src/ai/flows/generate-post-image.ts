@@ -5,7 +5,7 @@
 /**
  * @fileOverview Image generation flow for social media posts, with optional text overlay,
  * considering niche, category, image type, post topic, visual description, and overlay text styling
- * for highly personalized results.
+ * for highly personalized results. Also supports optional logo and contact number framing.
  *
  * - generatePostImage - A function that handles the image generation process.
  * - GeneratePostImageInput - The input type for the generatePostImage function.
@@ -22,7 +22,7 @@ const GeneratePostImageInputSchema = z.object({
   overlayText: z
     .string()
     .optional() 
-    .describe('The AI-generated hook or short text to prominently display on the generated image. If empty, no text will be overlaid.'),
+    .describe('The AI-generated hook or short text to prominently display on the generated image. If empty, no text will be overlaid unless framing details are present.'),
   niche: z.string().describe('The niche of the post (e.g., Food, Travel, Technology). This is required.'),
   category: z.string().describe('The category of the post (e.g., Recipe, Landscape, Product Review). This is required.'),
   imageType: z.string().describe('The desired artistic style of the image (e.g., Photography, Illustration, Modern Design). This is required.'),
@@ -31,6 +31,8 @@ const GeneratePostImageInputSchema = z.object({
   overlayFontStyle: z.string().optional().describe('The desired font style for the overlay text (e.g., Modern & Clean, Elegant Script, Magazine Headline).'),
   overlayAlignment: z.string().optional().describe('The alignment of the overlay text on the image (e.g., Top Left, Middle Center, Bottom Right).'),
   overlayFontSize: z.string().optional().describe('The relative font size for the overlay text (e.g., Small, Medium, Large, Extra Large).'),
+  logoDataUri: z.string().optional().describe("A data URI of the logo image to be placed in a frame on the main image. Expected format: 'data:<mimetype>;base64,<encoded_data>'."),
+  contactNumber: z.string().optional().describe("Contact number to be displayed in a frame on the main image, alongside the logo if provided."),
 });
 export type GeneratePostImageInput = z.infer<typeof GeneratePostImageInputSchema>;
 
@@ -67,15 +69,34 @@ The image must strictly adhere to the following parameters:
       imagePrompt += `\n- Post Type Context: This image is part of a "${input.postType}" post. Consider this for the overall mood or subtle thematic elements, ensuring it complements the main visual description.`;
     }
 
-    if (input.overlayText && input.overlayText.trim() !== '') {
-      imagePrompt += `\n\nThe most critical visual element is to feature the following AI-generated hook text directly ON the image: "${input.overlayText}".
-The text must be seamlessly and professionally integrated into the image's design, appearing as a deliberate graphic element, not merely text pasted on top.
-Think like a graphic designer:
-- The text's style, color, and placement must harmonize with the overall image aesthetic, mood, and the specified niche, category, and image type.
-- Render the text in an interesting and visually engaging manner, making it a focal point while still feeling like an organic part of the complete visual.
-- Avoid a flat, 'pasted-on' look. The text should appear as if it naturally belongs in the image composition. Consider subtle depth, shadows, or blending effects appropriate for the image style to enhance integration and readability.
+    // Framing for Logo and Contact Number
+    if (input.logoDataUri || input.contactNumber) {
+      imagePrompt += `\n\n**Branding Frame Instructions:**
+You MUST superimpose a clean, professional frame or designated area (e.g., a header bar at the top, or a footer bar at the bottom) onto the primary image generated from the visual description.
+This frame should be distinct and NOT obstruct the main visual content of the primary image or the main AI-generated hook text (if any, see below).
+The style of this frame and any text/logo within it should be professional and complement the overall image style ("${input.imageType}"), niche ("${input.niche}"), and category ("${input.category}").
+Within this branding frame:`;
+      if (input.logoDataUri) {
+        imagePrompt += `\n  - Incorporate the provided logo ({{media url=logoDataUri}}) prominently. For example, place it on the left or right side of the frame. Ensure the logo is clear and well-integrated.`;
+      }
+      if (input.contactNumber) {
+        imagePrompt += `\n  - Display the contact number "${input.contactNumber}" clearly as text. If a logo is present, place the contact number appropriately relative to it (e.g., opposite side or below). If no logo, the contact number can be more centrally positioned within the frame.`;
+      }
+       imagePrompt += `\nThis branding frame is a separate layer or element on top of the main image.`;
+    }
 
-Key considerations for the overlay text integration:
+
+    // Overlay Hook Text Instructions (on the main image, not the frame)
+    if (input.overlayText && input.overlayText.trim() !== '') {
+      imagePrompt += `\n\n**Main Hook Text Overlay Instructions (on primary image area):**
+The most critical visual element on the *primary image area* (distinct from the branding frame, if present) is to feature the following AI-generated hook text: "${input.overlayText}".
+The text must be seamlessly and professionally integrated into the primary image's design, appearing as a deliberate graphic element.
+Think like a graphic designer:
+- The text's style, color, and placement must harmonize with the primary image aesthetic, mood, and the specified niche, category, and image type.
+- Render the text in an interesting and visually engaging manner, making it a focal point while still feeling like an organic part of the complete visual.
+- Avoid a flat, 'pasted-on' look. The text should appear as if it naturally belongs in the primary image composition. Consider subtle depth, shadows, or blending effects appropriate for the image style to enhance integration and readability.
+
+Key considerations for the main hook text integration:
 - Typography & Style: Pay close attention to typography. The text should not only be readable but also enhance the image's overall design quality.
   - Color Variation: Creatively apply color variations within the overlay text. For example, make one or two key words a different, complementary color, or use a subtle gradient if appropriate for the style. This should enhance visual appeal and hierarchy.
   - Font Emphasis: For added visual interest and emphasis, attempt to render approximately two important words from the hook text in a slightly different but harmonious font style (e.g., a bolder weight, a subtle script if the main font is sans-serif, or vice-versa). This should complement the primary chosen font style if one is specified.
@@ -86,14 +107,14 @@ Key considerations for the overlay text integration:
         imagePrompt += `\n- Primary Text Font Style: The overall text should generally adhere to a style best described as '${input.overlayFontStyle}'. The font emphasis for specific words should be a variation or complement to this primary style. Ensure this chosen style is applied professionally.`;
       }
       if (input.overlayAlignment) {
-        imagePrompt += `\n- Text Alignment: Position the text on the image according to '${input.overlayAlignment}'. Ensure this placement considers the image's composition for optimal visual balance and impact.`;
+        imagePrompt += `\n- Text Alignment: Position the text on the primary image according to '${input.overlayAlignment}'. Ensure this placement considers the image's composition for optimal visual balance and impact. This alignment applies to the main hook on the image, not elements within the branding frame.`;
       }
       if (input.overlayFontSize) {
         imagePrompt += `\n- Text Font Size: The text should appear in a '${input.overlayFontSize}' relative size. 'Large' or 'Extra Large' should be very prominent, 'Small' should be more subtle but still readable. 'Medium' is a balanced default. The size should feel intentional within the design.`;
       }
       imagePrompt += `\nConsider the overall image composition, lighting, and depth to ensure the text placement and styling feel natural, engaging, and expertly integrated, making the hook an appealing and integral part of the graphic. The final result should look like a polished piece of social media content.`;
-    } else {
-      imagePrompt += `\n\nGenerate a high-quality image based purely on the visual description, niche, category, image type, and post context. No text should be overlaid on this image.`;
+    } else if (!input.logoDataUri && !input.contactNumber) { // Only add this if no overlay hook AND no branding frame
+      imagePrompt += `\n\nGenerate a high-quality image based purely on the visual description, niche, category, image type, and post context. No text should be overlaid on this image, and no branding frame is required.`;
     }
     
     imagePrompt += `\nThe overall image composition and style should be suitable for the visual prompt, niche, category, and specified image type. Aim for an engaging, high-quality, and aesthetically pleasing result that looks professionally crafted.`;
@@ -118,3 +139,4 @@ Key considerations for the overlay text integration:
   }
 );
 
+    

@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { generatePostContent, type GeneratePostContentInput, type GeneratePostContentOutput } from "@/ai/flows/generate-post-content";
 import { generatePostImage, type GeneratePostImageInput } from "@/ai/flows/generate-post-image";
-import { generateOverlayHook, type GenerateOverlayHookInput, type GenerateOverlayHookOutput } from "@/ai/flows/generate-overlay-hook";
+import { generateOverlayHook, type GenerateOverlayHookInput } from "@/ai/flows/generate-overlay-hook";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Download, ImageIcon, Instagram, Facebook, Twitter, Edit3, RotateCcw, AlertCircle, Wand2, Info, MessageSquareQuote, Quote, Palette, AlignCenter, Type } from "lucide-react";
+import { Download, ImageIcon, Instagram, Facebook, Twitter, Edit3, RotateCcw, AlertCircle, Wand2, Info, MessageSquareQuote, Quote, Palette, AlignCenter, Type, Building, Phone } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
@@ -44,14 +44,14 @@ const imageTypeOptions = [
   "3D Render",
   "Flat Design",
   "Collage",
-  "Animated GIF / Short Clip", // Note: Current AI generates static images. This might be for future or conceptual.
-  "Quote Post", // AI will overlay text on an image.
-  "Infographic", // AI will attempt a visual representation of data.
-  "Carousel / Slider", // App generates single image; carousel is platform feature.
+  "Animated GIF / Short Clip",
+  "Quote Post", 
+  "Infographic", 
+  "Carousel / Slider",
   "Before & After",
   "Step-by-Step / How-To",
   "Product Showcase",
-  "User-Generated Content", // AI might generate image in style of UGC.
+  "User-Generated Content",
   "Behind-the-Scenes",
   "Promo / Sale Banner",
   "Event Highlight",
@@ -112,9 +112,12 @@ export default function AetherPostGenerator() {
   const [overlayAlignment, setOverlayAlignment] = useState<string>(overlayAlignmentOptions[4]); // Middle Center
   const [overlayFontSize, setOverlayFontSize] = useState<string>(overlayFontSizeOptions[1]); // Medium
 
+  const [logoDataUri, setLogoDataUri] = useState<string | null>(null);
+  const [contactNumber, setContactNumber] = useState<string>("");
+
   const [platform, setPlatform] = useState<Platform>("instagram");
   const [generatedPost, setGeneratedPost] = useState<GeneratedPost | null>(null);
-  const [editedPostText, setEditedPostText] = useState<string>(""); // For the main post body
+  const [editedPostText, setEditedPostText] = useState<string>(""); 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isImageLoading, setIsImageLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -123,6 +126,19 @@ export default function AetherPostGenerator() {
   useEffect(() => {
     setCurrentImageUrl("https://placehold.co/600x400.png?text=Your+AI+Image+Here");
   }, []);
+
+  const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoDataUri(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setLogoDataUri(null);
+    }
+  };
 
   const validateInputs = (isRegeneratingImage = false) => {
     if (!postTopic.trim()) {
@@ -190,6 +206,8 @@ export default function AetherPostGenerator() {
         overlayFontStyle: overlayFontStyle || undefined,
         overlayAlignment: overlayAlignment || undefined,
         overlayFontSize: overlayFontSize || undefined,
+        logoDataUri: logoDataUri || undefined,
+        contactNumber: contactNumber || undefined,
       };
 
       const imageResult = await generatePostImage(imageInput);
@@ -245,6 +263,8 @@ export default function AetherPostGenerator() {
         overlayFontStyle: overlayFontStyle || undefined,
         overlayAlignment: overlayAlignment || undefined,
         overlayFontSize: overlayFontSize || undefined,
+        logoDataUri: logoDataUri || undefined,
+        contactNumber: contactNumber || undefined,
       };
       const imageResult = await generatePostImage(imageInput);
       if (imageResult && imageResult.imageUri) {
@@ -254,7 +274,7 @@ export default function AetherPostGenerator() {
         } else if (editedPostText) { 
           setGeneratedPost({ 
             postText: editedPostText, 
-            hashtags: generatedPost?.hashtags || [], // Preserve existing hashtags if any
+            hashtags: generatedPost?.hashtags || [], 
             imageUri: imageResult.imageUri,
             hookText: currentHookText!
           });
@@ -293,7 +313,7 @@ export default function AetherPostGenerator() {
     if (!hint && postTopic) {
         hint = postTopic.toLowerCase().split(/\s+/).slice(0, 2).join(" ");
     }
-     if (hint.length === 0) { // Fallback if previous conditions didn't yield a hint
+     if (hint.length === 0) { 
         if (niche) hint += niche.toLowerCase().split(" ")[0] + " ";
         if (category) hint += category.toLowerCase().split(" ")[0];
     }
@@ -550,6 +570,49 @@ export default function AetherPostGenerator() {
             </Button>
           </CardContent>
         </Card>
+        
+        {/* Personalization Card */}
+        <Card className="shadow-lg lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-xl md:text-2xl flex items-center">
+              <Building className="mr-2 h-5 w-5 md:h-6 md:w-6 text-primary" />
+              Personalize Your Post (Optional)
+            </CardTitle>
+            <CardDescription>Add a logo and contact number to be framed on your image.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 md:space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="logoUpload" className="text-base font-medium">Upload Logo</Label>
+              <Input
+                id="logoUpload"
+                type="file"
+                accept="image/png, image/jpeg, image/webp, image/svg+xml"
+                onChange={handleLogoChange}
+                className="text-sm"
+              />
+              {logoDataUri && (
+                <div className="mt-2 p-2 border rounded-md inline-block bg-muted/50">
+                  <Image src={logoDataUri} alt="Logo preview" width={80} height={80} className="max-h-20 object-contain rounded" />
+                </div>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="contactNumber" className="text-base font-medium">Contact Number</Label>
+              <Input
+                id="contactNumber"
+                type="text"
+                placeholder="e.g., +1 234-567-8900"
+                value={contactNumber}
+                onChange={(e) => setContactNumber(e.target.value)}
+                className="text-sm"
+              />
+            </div>
+             <p className="text-xs text-muted-foreground">
+                Note: Adding a logo/contact will instruct the AI to create a framed area on the image. Results may vary.
+            </p>
+          </CardContent>
+        </Card>
+
 
         <Card className="shadow-lg lg:col-span-3">
           <CardHeader>
@@ -636,7 +699,7 @@ export default function AetherPostGenerator() {
                         value={editedPostText}
                         onChange={(e) => setEditedPostText(e.target.value)}
                         rows={6}
-                        className="mt-2"
+                        className="mt-2 text-sm"
                         placeholder="Edit your generated post content here."
                         disabled={!generatedPost && !isLoading}
                       />
@@ -667,10 +730,5 @@ export default function AetherPostGenerator() {
     </TooltipProvider>
   );
 }
-
-
-    
-
-    
 
     
