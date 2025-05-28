@@ -69,10 +69,18 @@ The image must strictly adhere to the following parameters:
 
     if (input.overlayText && input.overlayText.trim() !== '') {
       imagePrompt += `\n\nThe most critical visual element is to feature the following AI-generated hook text directly ON the image: "${input.overlayText}".
-The text should be seamlessly integrated into the image's design as if it were a professional social media graphic. Pay close attention to typography, color contrast, and placement to ensure the text is highly readable and enhances the overall image.`;
+The text should be seamlessly integrated into the image's design as if it were a professional social media graphic.
+Render the text in an interesting and visually engaging manner, making it a focal point.
+
+Key considerations for the overlay text:
+- Typography & Style: Pay close attention to typography to ensure the text is highly readable and enhances the overall image.
+  - Color Variation: Creatively apply color variations within the overlay text. For example, you might make one or two key words a different, complementary color from the main text color, or use a subtle gradient if appropriate for the style. This should enhance visual appeal.
+  - Font Emphasis: For added visual interest and emphasis, attempt to render approximately two important words from the hook text in a slightly different but harmonious font style (e.g., a bolder weight, a subtle script if the main font is sans-serif, or vice-versa) compared to the rest of the overlay text. This should complement the primary chosen font style if one is specified.
+  - Readability: Above all, ensure the text remains clear, legible, and well-contrasted against the image background.
+`;
 
       if (input.overlayFontStyle) {
-        imagePrompt += `\n- Text Font Style: Render the text in a style best described as '${input.overlayFontStyle}'. Ensure it is legible and complements the image aesthetic.`;
+        imagePrompt += `\n- Primary Text Font Style: The overall text should generally adhere to a style best described as '${input.overlayFontStyle}'. The font emphasis for specific words should be a variation or complement to this primary style.`;
       }
       if (input.overlayAlignment) {
         imagePrompt += `\n- Text Alignment: Position the text on the image according to '${input.overlayAlignment}'. For example, if 'Top Right' is specified, place it in the top-right area. If 'Middle Center', place it centrally.`;
@@ -80,7 +88,7 @@ The text should be seamlessly integrated into the image's design as if it were a
       if (input.overlayFontSize) {
         imagePrompt += `\n- Text Font Size: The text should appear in a '${input.overlayFontSize}' relative size. 'Large' or 'Extra Large' should be very prominent, 'Small' should be more subtle but still readable. 'Medium' is a balanced default.`;
       }
-      imagePrompt += `\nConsider the overall image composition to ensure the text placement and styling feel natural and engaging.`
+      imagePrompt += `\nConsider the overall image composition to ensure the text placement and styling feel natural and engaging, making the hook an integral and appealing part of the graphic.`;
     } else {
       imagePrompt += `\n\nGenerate a high-quality image based purely on the visual description, niche, category, image type, and post context. No text should be overlaid on this image.`;
     }
