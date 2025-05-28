@@ -6,7 +6,8 @@ import Image from "next/image";
 import { generatePostContent, type GeneratePostContentInput, type GeneratePostContentOutput } from "@/ai/flows/generate-post-content";
 import { generatePostImage, type GeneratePostImageInput } from "@/ai/flows/generate-post-image";
 import { generateOverlayHook, type GenerateOverlayHookInput } from "@/ai/flows/generate-overlay-hook";
-import { generateTopicSuggestion, type GenerateTopicSuggestionInput } from "@/ai/flows/generate-topic-suggestion"; // Added
+import { generateTopicSuggestion, type GenerateTopicSuggestionInput } from "@/ai/flows/generate-topic-suggestion";
+import { generateVisualDescriptionSuggestion, type GenerateVisualDescriptionSuggestionInput } from "@/ai/flows/generate-visual-description-suggestion"; // Added
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -15,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Download, ImageIcon, Instagram, Facebook, Twitter, Edit3, RotateCcw, AlertCircle, Wand2, Info, MessageSquareQuote, Quote, Palette, AlignCenter, Type as TypeIcon, Sparkles } from "lucide-react"; // Renamed Type to TypeIcon
+import { Download, ImageIcon, Instagram, Facebook, Twitter, Edit3, RotateCcw, AlertCircle, Wand2, Info, MessageSquareQuote, Quote, Palette, AlignCenter, Type as TypeIcon, Sparkles } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
@@ -46,8 +47,8 @@ const imageTypeOptions = [
   "Flat Design",
   "Collage",
   "Animated GIF / Short Clip",
-  "Quote Post", 
-  "Infographic", 
+  "Quote Post",
+  "Infographic",
   "Carousel / Slider",
   "Before & After",
   "Step-by-Step / How-To",
@@ -104,7 +105,11 @@ export default function AetherPostGenerator() {
   const [postTopic, setPostTopic] = useState<string>("");
   const [topicSuggestion, setTopicSuggestion] = useState<string | null>(null);
   const [isTopicSuggestionLoading, setIsTopicSuggestionLoading] = useState<boolean>(false);
+
   const [imageVisualDescription, setImageVisualDescription] = useState<string>("");
+  const [visualDescriptionSuggestion, setVisualDescriptionSuggestion] = useState<string | null>(null); // Added
+  const [isVisualDescriptionSuggestionLoading, setIsVisualDescriptionSuggestionLoading] = useState<boolean>(false); // Added
+
   const [aiGeneratedHook, setAiGeneratedHook] = useState<string>("");
   const [niche, setNiche] = useState<string>("");
   const [category, setCategory] = useState<string>("");
@@ -117,7 +122,7 @@ export default function AetherPostGenerator() {
 
   const [platform, setPlatform] = useState<Platform>("instagram");
   const [generatedPost, setGeneratedPost] = useState<GeneratedPost | null>(null);
-  const [editedPostText, setEditedPostText] = useState<string>(""); 
+  const [editedPostText, setEditedPostText] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isImageLoading, setIsImageLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -153,7 +158,7 @@ export default function AetherPostGenerator() {
 
     return () => {
       clearTimeout(handler);
-      setIsTopicSuggestionLoading(false); // Clear loading if component unmounts or topic changes quickly
+      setIsTopicSuggestionLoading(false);
     };
   }, [postTopic]);
 
@@ -169,6 +174,51 @@ export default function AetherPostGenerator() {
     if (topicSuggestion) {
       setPostTopic(topicSuggestion);
       setTopicSuggestion(null);
+    }
+  };
+
+  // Debounced effect for image visual description suggestions
+  useEffect(() => {
+    if (imageVisualDescription.trim().length < 3) {
+      setVisualDescriptionSuggestion(null);
+      return;
+    }
+
+    const handler = setTimeout(async () => {
+      setIsVisualDescriptionSuggestionLoading(true);
+      try {
+        const result = await generateVisualDescriptionSuggestion({ partialVisualDescription: imageVisualDescription });
+        if (result && result.suggestedVisualDescription && result.suggestedVisualDescription.toLowerCase() !== imageVisualDescription.toLowerCase()) {
+          setVisualDescriptionSuggestion(result.suggestedVisualDescription);
+        } else {
+          setVisualDescriptionSuggestion(null);
+        }
+      } catch (error) {
+        console.error("Failed to fetch visual description suggestion:", error);
+        setVisualDescriptionSuggestion(null);
+      } finally {
+        setIsVisualDescriptionSuggestionLoading(false);
+      }
+    }, 1000); // 1-second debounce
+
+    return () => {
+      clearTimeout(handler);
+      setIsVisualDescriptionSuggestionLoading(false);
+    };
+  }, [imageVisualDescription]);
+
+  const handleVisualDescriptionKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === 'Tab' && visualDescriptionSuggestion) {
+      event.preventDefault();
+      setImageVisualDescription(visualDescriptionSuggestion);
+      setVisualDescriptionSuggestion(null);
+    }
+  };
+
+  const applyVisualDescriptionSuggestion = () => {
+    if (visualDescriptionSuggestion) {
+      setImageVisualDescription(visualDescriptionSuggestion);
+      setVisualDescriptionSuggestion(null);
     }
   };
 
@@ -226,11 +276,11 @@ export default function AetherPostGenerator() {
       if (!contentResult || !contentResult.postText) {
         throw new Error("Failed to generate post text.");
       }
-      setEditedPostText(contentResult.postText); 
+      setEditedPostText(contentResult.postText);
 
       const imageInput: GeneratePostImageInput = {
         imageVisualPrompt: imageVisualDescription,
-        overlayText: currentHookText, 
+        overlayText: currentHookText,
         niche,
         category,
         imageType,
@@ -265,7 +315,7 @@ export default function AetherPostGenerator() {
     setError(null);
     const oldImageUrl = currentImageUrl;
     setCurrentImageUrl("https://placehold.co/600x400.png?text=Regenerating...");
-    let currentHookText = generatedPost?.hookText || aiGeneratedHook; 
+    let currentHookText = generatedPost?.hookText || aiGeneratedHook;
 
     try {
       if (!currentHookText) {
@@ -300,10 +350,10 @@ export default function AetherPostGenerator() {
         setCurrentImageUrl(imageResult.imageUri);
         if (generatedPost) {
           setGeneratedPost(prev => prev ? {...prev, imageUri: imageResult.imageUri, hookText: currentHookText!} : null);
-        } else if (editedPostText) { 
-          setGeneratedPost({ 
-            postText: editedPostText, 
-            hashtags: generatedPost?.hashtags || [], 
+        } else if (editedPostText) {
+          setGeneratedPost({
+            postText: editedPostText,
+            hashtags: generatedPost?.hashtags || [],
             imageUri: imageResult.imageUri,
             hookText: currentHookText!
           });
@@ -334,7 +384,7 @@ export default function AetherPostGenerator() {
     link.click();
     document.body.removeChild(link);
   };
-  
+
   const getPlaceholderDataAiHint = () => {
     let hint = "";
     if (imageVisualDescription) {
@@ -343,11 +393,11 @@ export default function AetherPostGenerator() {
     if (!hint && postTopic) {
         hint = postTopic.toLowerCase().split(/\s+/).slice(0, 2).join(" ");
     }
-     if (hint.length === 0) { 
+     if (hint.length === 0) {
         if (niche) hint += niche.toLowerCase().split(" ")[0] + " ";
         if (category) hint += category.toLowerCase().split(" ")[0];
     }
-    
+
     if (hint.trim().length === 0 && platform) {
        switch(platform) {
         case 'instagram': hint = "lifestyle social"; break;
@@ -416,7 +466,7 @@ export default function AetherPostGenerator() {
               )}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="imageVisualDescription" className="text-base font-medium flex items-center">
                 Image Visual Description <span className="text-destructive ml-1">*</span>
                 <Tooltip>
@@ -424,7 +474,7 @@ export default function AetherPostGenerator() {
                     <Info className="ml-2 h-4 w-4 text-muted-foreground cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p className="max-w-xs">Describe what you want the image to look like. Be specific for best results. The AI will also generate a hook/quote to overlay on this image.</p>
+                    <p className="max-w-xs">Describe what you want the image to look like. Be specific for best results. Start typing for AI suggestions!</p>
                   </TooltipContent>
                 </Tooltip>
               </Label>
@@ -432,13 +482,21 @@ export default function AetherPostGenerator() {
                 id="imageVisualDescription"
                 placeholder="e.g., A steaming latte art heart on a rustic wooden table, soft morning light, a few coffee beans scattered around."
                 value={imageVisualDescription}
-                onChange={(e) => setImageVisualDescription(e.target.value)}
+                onChange={(e) => { setImageVisualDescription(e.target.value); if (visualDescriptionSuggestion) setVisualDescriptionSuggestion(null);}}
+                onKeyDown={handleVisualDescriptionKeyDown}
                 rows={3}
                 required
                 className="text-sm"
               />
+              {isVisualDescriptionSuggestionLoading && <p className="text-xs text-muted-foreground mt-1 flex items-center"><Sparkles className="h-3 w-3 mr-1 animate-pulse text-accent" />Loading suggestion...</p>}
+              {visualDescriptionSuggestion && !isVisualDescriptionSuggestionLoading && (
+                <div className="text-xs text-muted-foreground mt-1 p-2 bg-accent/10 rounded-md">
+                  Suggestion: <button type="button" className="text-primary hover:underline font-medium" onClick={applyVisualDescriptionSuggestion}>{visualDescriptionSuggestion}</button>
+                  <span className="ml-1 text-muted-foreground/80">(Press Tab or click to apply)</span>
+                </div>
+              )}
             </div>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="niche" className="text-base font-medium">Niche <span className="text-destructive ml-1">*</span></Label>
@@ -448,6 +506,7 @@ export default function AetherPostGenerator() {
                   value={niche}
                   onChange={(e) => setNiche(e.target.value)}
                   required
+                  className="text-sm"
                 />
               </div>
               <div className="space-y-2">
@@ -458,10 +517,11 @@ export default function AetherPostGenerator() {
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   required
+                  className="text-sm"
                 />
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="postType" className="text-base font-medium flex items-center">
@@ -595,7 +655,11 @@ export default function AetherPostGenerator() {
               </Select>
             </div>
 
-            <Button onClick={handleGeneratePost} disabled={isLoading || isImageLoading || isTopicSuggestionLoading} className="w-full text-base py-3 md:text-lg md:py-4 bg-primary hover:bg-primary/90">
+            <Button 
+              onClick={handleGeneratePost} 
+              disabled={isLoading || isImageLoading || isTopicSuggestionLoading || isVisualDescriptionSuggestionLoading} 
+              className="w-full text-base py-3 md:text-lg md:py-4 bg-primary hover:bg-primary/90"
+            >
               {isLoading ? (
                 <>
                   <RotateCcw className="mr-2 h-5 w-5 animate-spin" />
@@ -610,7 +674,7 @@ export default function AetherPostGenerator() {
             </Button>
           </CardContent>
         </Card>
-        
+
         <Card className="shadow-lg lg:col-span-3">
           <CardHeader>
             <CardTitle className="text-xl md:text-2xl flex items-center"><ImageIcon className="mr-2 h-5 w-5 md:h-6 md:w-6 text-primary" />Post Preview &amp; Edit</CardTitle>
@@ -644,7 +708,12 @@ export default function AetherPostGenerator() {
                     )}
                   </div>
                   <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
-                    <Button onClick={handleRegenerateImage} variant="outline" disabled={isLoading || isImageLoading || !imageVisualDescription || !niche || !category || isTopicSuggestionLoading} className="flex-1">
+                    <Button 
+                      onClick={handleRegenerateImage} 
+                      variant="outline" 
+                      disabled={isLoading || isImageLoading || !imageVisualDescription || !niche || !category || isTopicSuggestionLoading || isVisualDescriptionSuggestionLoading} 
+                      className="flex-1"
+                    >
                       {isImageLoading ? (
                          <>
                           <RotateCcw className="mr-2 h-4 w-4 animate-spin" />
@@ -702,7 +771,7 @@ export default function AetherPostGenerator() {
                       />
                     }
                   </div>
-                  
+
                   <div>
                     <Label className="text-base font-medium">Hashtags</Label>
                     {(isLoading && !generatedPost) ? <Skeleton className="h-12 w-full mt-2" /> :
