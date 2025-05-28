@@ -20,8 +20,8 @@ const GeneratePostImageInputSchema = z.object({
     .describe('A detailed description of what the image should visually depict.'),
   overlayText: z
     .string()
-    .optional() // Made optional, as user might not want text on image
-    .describe('The text to prominently display on the generated image. If empty, no text will be overlaid.'),
+    .optional() 
+    .describe('The AI-generated hook or short text to prominently display on the generated image. If empty, no text will be overlaid.'),
   niche: z.string().describe('The niche of the post (e.g., Food, Travel, Technology). This is required.'),
   category: z.string().describe('The category of the post (e.g., Recipe, Landscape, Product Review). This is required.'),
   imageType: z.string().describe('The desired artistic style of the image (e.g., Photography, Illustration, Modern Design). This is required.'),
@@ -64,7 +64,7 @@ The image must strictly adhere to the following parameters:
     }
 
     if (input.overlayText && input.overlayText.trim() !== '') {
-      imagePrompt += `\n\nThe most critical visual element is to feature the following text directly ON the image in a visually appealing, clear, and prominent way: "${input.overlayText}".
+      imagePrompt += `\n\nThe most critical visual element is to feature the following AI-generated hook text directly ON the image in a visually appealing, clear, and prominent way: "${input.overlayText}".
 The text should be seamlessly integrated into the image's design as if it were a professional social media graphic. Pay close attention to typography, color contrast, and placement to ensure the text is highly readable and enhances the overall image.`;
     } else {
       imagePrompt += `\n\nGenerate a high-quality image based purely on the visual description, niche, category, image type, and post context. No text should be overlaid on this image.`;
@@ -91,4 +91,3 @@ The text should be seamlessly integrated into the image's design as if it were a
     return {imageUri: media.url};
   }
 );
-

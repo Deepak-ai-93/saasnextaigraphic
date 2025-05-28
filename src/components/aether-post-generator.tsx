@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { generatePostContent, type GeneratePostContentInput, type GeneratePostContentOutput } from "@/ai/flows/generate-post-content";
 import { generatePostImage, type GeneratePostImageInput } from "@/ai/flows/generate-post-image";
+import { generateOverlayHook, type GenerateOverlayHookInput, type GenerateOverlayHookOutput } from "@/ai/flows/generate-overlay-hook";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -13,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Download, ImageIcon, Instagram, Facebook, Twitter, Edit3, RotateCcw, AlertCircle, Wand2, Info, MessageSquareQuote, Highlighter } from "lucide-react";
+import { Download, ImageIcon, Instagram, Facebook, Twitter, Edit3, RotateCcw, AlertCircle, Wand2, Info, MessageSquareQuote, Quote } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -21,6 +22,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 type Platform = "instagram" | "facebook" | "x";
 interface GeneratedPost extends GeneratePostContentOutput {
   imageUri: string;
+  hookText: string;
 }
 
 const platformIcons: Record<Platform, React.ElementType> = {
@@ -66,7 +68,8 @@ const postTypeOptions = [
 export default function AetherPostGenerator() {
   const [postTopic, setPostTopic] = useState<string>("");
   const [imageVisualDescription, setImageVisualDescription] = useState<string>("");
-  const [imageOverlayText, setImageOverlayText] = useState<string>("");
+  // const [imageOverlayText, setImageOverlayText] = useState<string>(""); // Manual overlay text removed
+  const [aiGeneratedHook, setAiGeneratedHook] = useState<string>("");
   const [niche, setNiche] = useState<string>("");
   const [category, setCategory] = useState<string>("");
   const [imageType, setImageType] = useState<string>(imageTypeOptions[0]);
@@ -84,7 +87,7 @@ export default function AetherPostGenerator() {
   }, []);
 
   const validateInputs = (isRegeneratingImage = false) => {
-    if (!isRegeneratingImage && !postTopic.trim()) {
+    if (!postTopic.trim()) {
       setError("Please enter a Post Topic/Idea.");
       return false;
     }
@@ -92,7 +95,6 @@ export default function AetherPostGenerator() {
       setError("Please enter an Image Visual Description.");
       return false;
     }
-    // imageOverlayText is optional
     if (!niche.trim()) {
       setError("Niche is required.");
       return false;
@@ -112,9 +114,23 @@ export default function AetherPostGenerator() {
     setError(null);
     setGeneratedPost(null);
     setEditedPostText("");
+    setAiGeneratedHook("");
     setCurrentImageUrl("https://placehold.co/600x400.png?text=Generating...");
 
     try {
+      const hookInput: GenerateOverlayHookInput = {
+        postTopic,
+        niche,
+        category,
+        postType: postType || undefined,
+      };
+      const hookResult = await generateOverlayHook(hookInput);
+      if (!hookResult || !hookResult.hookText) {
+        throw new Error("Failed to generate image overlay hook.");
+      }
+      const currentHookText = hookResult.hookText;
+      setAiGeneratedHook(currentHookText);
+
       const contentInput: GeneratePostContentInput = {
         description: postTopic,
         postType: postType || undefined,
@@ -123,11 +139,11 @@ export default function AetherPostGenerator() {
       if (!contentResult || !contentResult.postText) {
         throw new Error("Failed to generate post text.");
       }
-      setEditedPostText(contentResult.postText); // Set the main post content
+      setEditedPostText(contentResult.postText); 
 
       const imageInput: GeneratePostImageInput = {
         imageVisualPrompt: imageVisualDescription,
-        overlayText: imageOverlayText, // Use the dedicated overlay text
+        overlayText: currentHookText, 
         niche,
         category,
         imageType,
@@ -138,7 +154,7 @@ export default function AetherPostGenerator() {
       const imageResult = await generatePostImage(imageInput);
 
       if (imageResult && imageResult.imageUri) {
-        setGeneratedPost({ ...contentResult, imageUri: imageResult.imageUri });
+        setGeneratedPost({ ...contentResult, imageUri: imageResult.imageUri, hookText: currentHookText });
         setCurrentImageUrl(imageResult.imageUri);
       } else {
         throw new Error("Failed to generate image for the post.");
@@ -155,20 +171,33 @@ export default function AetherPostGenerator() {
   const handleRegenerateImage = async () => {
     if (!validateInputs(true)) return;
 
-    // For image regeneration, the overlay text comes from the dedicated input field.
-    // No need to check editedPostText for this purpose anymore.
-    // We can remove the check for textForImageRegen or make it specifically for imageOverlayText if we want to make it mandatory for regen.
-    // For now, let's assume if imageOverlayText is empty, no text is overlaid.
-
     setIsImageLoading(true);
     setError(null);
     const oldImageUrl = currentImageUrl;
     setCurrentImageUrl("https://placehold.co/600x400.png?text=Regenerating...");
+    let currentHookText = generatedPost?.hookText || aiGeneratedHook; // Use existing hook if available
 
     try {
+       // Regenerate hook if not already present or if desired for full regen
+      if (!currentHookText) {
+        const hookInput: GenerateOverlayHookInput = {
+            postTopic,
+            niche,
+            category,
+            postType: postType || undefined,
+        };
+        const hookResult = await generateOverlayHook(hookInput);
+        if (!hookResult || !hookResult.hookText) {
+            throw new Error("Failed to regenerate image overlay hook for image regeneration.");
+        }
+        currentHookText = hookResult.hookText;
+        setAiGeneratedHook(currentHookText);
+      }
+
+
       const imageInput: GeneratePostImageInput = {
         imageVisualPrompt: imageVisualDescription,
-        overlayText: imageOverlayText, // Use the dedicated overlay text
+        overlayText: currentHookText,
         niche,
         category,
         imageType,
@@ -179,7 +208,14 @@ export default function AetherPostGenerator() {
       if (imageResult && imageResult.imageUri) {
         setCurrentImageUrl(imageResult.imageUri);
         if (generatedPost) {
-          setGeneratedPost(prev => prev ? {...prev, imageUri: imageResult.imageUri} : null);
+          setGeneratedPost(prev => prev ? {...prev, imageUri: imageResult.imageUri, hookText: currentHookText!} : null);
+        } else if (editedPostText) { // If only content was generated before
+          setGeneratedPost({ 
+            postText: editedPostText, 
+            hashtags: [], // Or fetch/keep existing if available
+            imageUri: imageResult.imageUri,
+            hookText: currentHookText!
+          });
         }
       } else {
         throw new Error("Failed to regenerate image.");
@@ -257,7 +293,7 @@ export default function AetherPostGenerator() {
                     <Info className="ml-2 h-4 w-4 text-muted-foreground cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p className="max-w-xs">The main theme for your post's text content and hashtags.</p>
+                    <p className="max-w-xs">The main theme for your post's text content, hashtags, and AI-generated image hook.</p>
                   </TooltipContent>
                 </Tooltip>
               </Label>
@@ -280,7 +316,7 @@ export default function AetherPostGenerator() {
                     <Info className="ml-2 h-4 w-4 text-muted-foreground cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p className="max-w-xs">Describe what you want the image to look like. Be specific for best results.</p>
+                    <p className="max-w-xs">Describe what you want the image to look like. Be specific for best results. The AI will also generate a hook/quote to overlay on this image.</p>
                   </TooltipContent>
                 </Tooltip>
               </Label>
@@ -292,28 +328,6 @@ export default function AetherPostGenerator() {
                 rows={3}
                 className="text-base"
                 required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="imageOverlayText" className="text-lg flex items-center">
-                Text to Overlay on Image (Hook/Quote)
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="ml-2 h-4 w-4 text-muted-foreground cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="max-w-xs">Enter the exact text (e.g., a short hook or quote) you want to appear on the image. Leave blank for no text overlay.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </Label>
-              <Textarea
-                id="imageOverlayText"
-                placeholder="e.g., 'Fresh Brews & Good Moods!'"
-                value={imageOverlayText}
-                onChange={(e) => setImageOverlayText(e.target.value)}
-                rows={2}
-                className="text-base"
               />
             </div>
             
@@ -351,7 +365,7 @@ export default function AetherPostGenerator() {
                       <Info className="ml-2 h-4 w-4 text-muted-foreground cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p className="max-w-xs">Select the type of post to guide AI for content tone and style.</p>
+                      <p className="max-w-xs">Select the type of post to guide AI for content tone, style, and image hook.</p>
                     </TooltipContent>
                   </Tooltip>
                 </Label>
@@ -449,6 +463,15 @@ export default function AetherPostGenerator() {
                   />
                 )}
               </div>
+              {generatedPost && generatedPost.hookText && (
+                <div className="mt-2 p-3 bg-accent/10 rounded-md">
+                  <Label className="text-base flex items-center text-accent-foreground/80">
+                     <Quote className="mr-2 h-4 w-4 text-accent" />
+                     AI-Generated Hook (on image):
+                  </Label>
+                  <p className="text-sm text-accent-foreground mt-1 italic">"{generatedPost.hookText}"</p>
+                </div>
+              )}
               <div className="mt-4 flex space-x-3">
                 <Button onClick={handleRegenerateImage} variant="outline" disabled={isLoading || isImageLoading || !imageVisualDescription || !niche || !category} className="flex-1">
                   {isImageLoading ? (
@@ -459,7 +482,7 @@ export default function AetherPostGenerator() {
                   ) : (
                     <>
                       <RotateCcw className="mr-2 h-4 w-4" />
-                      Regenerate Image
+                      Regenerate Image & Hook
                     </>
                   )}
                 </Button>
