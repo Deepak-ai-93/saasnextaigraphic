@@ -6,6 +6,7 @@ import Image from "next/image";
 import { generatePostContent, type GeneratePostContentInput, type GeneratePostContentOutput } from "@/ai/flows/generate-post-content";
 import { generatePostImage, type GeneratePostImageInput } from "@/ai/flows/generate-post-image";
 import { generateOverlayHook, type GenerateOverlayHookInput } from "@/ai/flows/generate-overlay-hook";
+import { generateTopicSuggestion, type GenerateTopicSuggestionInput } from "@/ai/flows/generate-topic-suggestion"; // Added
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -14,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Download, ImageIcon, Instagram, Facebook, Twitter, Edit3, RotateCcw, AlertCircle, Wand2, Info, MessageSquareQuote, Quote, Palette, AlignCenter, Type } from "lucide-react";
+import { Download, ImageIcon, Instagram, Facebook, Twitter, Edit3, RotateCcw, AlertCircle, Wand2, Info, MessageSquareQuote, Quote, Palette, AlignCenter, Type as TypeIcon, Sparkles } from "lucide-react"; // Renamed Type to TypeIcon
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
@@ -101,6 +102,8 @@ const overlayFontSizeOptions = [
 
 export default function AetherPostGenerator() {
   const [postTopic, setPostTopic] = useState<string>("");
+  const [topicSuggestion, setTopicSuggestion] = useState<string | null>(null);
+  const [isTopicSuggestionLoading, setIsTopicSuggestionLoading] = useState<boolean>(false);
   const [imageVisualDescription, setImageVisualDescription] = useState<string>("");
   const [aiGeneratedHook, setAiGeneratedHook] = useState<string>("");
   const [niche, setNiche] = useState<string>("");
@@ -123,6 +126,52 @@ export default function AetherPostGenerator() {
   useEffect(() => {
     setCurrentImageUrl("https://placehold.co/600x400.png?text=Your+AI+Image+Here");
   }, []);
+
+  // Debounced effect for topic suggestions
+  useEffect(() => {
+    if (postTopic.trim().length < 3) {
+      setTopicSuggestion(null);
+      return;
+    }
+
+    const handler = setTimeout(async () => {
+      setIsTopicSuggestionLoading(true);
+      try {
+        const result = await generateTopicSuggestion({ partialTopic: postTopic });
+        if (result && result.suggestedTopic && result.suggestedTopic.toLowerCase() !== postTopic.toLowerCase()) {
+          setTopicSuggestion(result.suggestedTopic);
+        } else {
+          setTopicSuggestion(null);
+        }
+      } catch (error) {
+        console.error("Failed to fetch topic suggestion:", error);
+        setTopicSuggestion(null);
+      } finally {
+        setIsTopicSuggestionLoading(false);
+      }
+    }, 1000); // 1-second debounce
+
+    return () => {
+      clearTimeout(handler);
+      setIsTopicSuggestionLoading(false); // Clear loading if component unmounts or topic changes quickly
+    };
+  }, [postTopic]);
+
+  const handlePostTopicKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === 'Tab' && topicSuggestion) {
+      event.preventDefault();
+      setPostTopic(topicSuggestion);
+      setTopicSuggestion(null);
+    }
+  };
+
+  const applyTopicSuggestion = () => {
+    if (topicSuggestion) {
+      setPostTopic(topicSuggestion);
+      setTopicSuggestion(null);
+    }
+  };
+
 
   const validateInputs = (isRegeneratingImage = false) => {
     if (!postTopic.trim()) {
@@ -336,7 +385,7 @@ export default function AetherPostGenerator() {
             <CardDescription>Describe your ideal post and let AI do the magic!</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 md:space-y-6">
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="postTopic" className="text-base font-medium flex items-center">
                 Post Topic/Idea <span className="text-destructive ml-1">*</span>
                 <Tooltip>
@@ -344,7 +393,7 @@ export default function AetherPostGenerator() {
                     <Info className="ml-2 h-4 w-4 text-muted-foreground cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p className="max-w-xs">The main theme for your post's text content, hashtags, and AI-generated image hook.</p>
+                    <p className="max-w-xs">The main theme for your post's text content, hashtags, and AI-generated image hook. Start typing for AI suggestions!</p>
                   </TooltipContent>
                 </Tooltip>
               </Label>
@@ -352,11 +401,19 @@ export default function AetherPostGenerator() {
                 id="postTopic"
                 placeholder="e.g., Grand opening of 'The Cozy Corner' cafe."
                 value={postTopic}
-                onChange={(e) => setPostTopic(e.target.value)}
+                onChange={(e) => { setPostTopic(e.target.value); if (topicSuggestion) setTopicSuggestion(null);}}
+                onKeyDown={handlePostTopicKeyDown}
                 rows={3}
                 required
                 className="text-sm"
               />
+              {isTopicSuggestionLoading && <p className="text-xs text-muted-foreground mt-1 flex items-center"><Sparkles className="h-3 w-3 mr-1 animate-pulse text-accent" />Loading suggestion...</p>}
+              {topicSuggestion && !isTopicSuggestionLoading && (
+                <div className="text-xs text-muted-foreground mt-1 p-2 bg-accent/10 rounded-md">
+                  Suggestion: <button type="button" className="text-primary hover:underline font-medium" onClick={applyTopicSuggestion}>{topicSuggestion}</button>
+                  <span className="ml-1 text-muted-foreground/80">(Press Tab or click to apply)</span>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -391,7 +448,6 @@ export default function AetherPostGenerator() {
                   value={niche}
                   onChange={(e) => setNiche(e.target.value)}
                   required
-                  className="text-sm"
                 />
               </div>
               <div className="space-y-2">
@@ -402,7 +458,6 @@ export default function AetherPostGenerator() {
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   required
-                  className="text-sm"
                 />
               </div>
             </div>
@@ -540,7 +595,7 @@ export default function AetherPostGenerator() {
               </Select>
             </div>
 
-            <Button onClick={handleGeneratePost} disabled={isLoading || isImageLoading} className="w-full text-base py-3 md:text-lg md:py-4 bg-primary hover:bg-primary/90">
+            <Button onClick={handleGeneratePost} disabled={isLoading || isImageLoading || isTopicSuggestionLoading} className="w-full text-base py-3 md:text-lg md:py-4 bg-primary hover:bg-primary/90">
               {isLoading ? (
                 <>
                   <RotateCcw className="mr-2 h-5 w-5 animate-spin" />
@@ -589,7 +644,7 @@ export default function AetherPostGenerator() {
                     )}
                   </div>
                   <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
-                    <Button onClick={handleRegenerateImage} variant="outline" disabled={isLoading || isImageLoading || !imageVisualDescription || !niche || !category} className="flex-1">
+                    <Button onClick={handleRegenerateImage} variant="outline" disabled={isLoading || isImageLoading || !imageVisualDescription || !niche || !category || isTopicSuggestionLoading} className="flex-1">
                       {isImageLoading ? (
                          <>
                           <RotateCcw className="mr-2 h-4 w-4 animate-spin" />
@@ -611,14 +666,14 @@ export default function AetherPostGenerator() {
 
                 {/* Right Column: Generated Hook, Post Text, Hashtags */}
                 <div className="space-y-6">
-                  {(isLoading && !generatedPost) ? <Skeleton className="h-16 w-full" /> :
-                    (generatedPost && generatedPost.hookText) && (
+                  {(isLoading && !generatedPost && !aiGeneratedHook) ? <Skeleton className="h-16 w-full" /> :
+                    ((generatedPost && generatedPost.hookText) || aiGeneratedHook) && (
                       <div className="p-3 bg-accent/10 rounded-md">
                         <Label className="text-sm font-medium flex items-center text-accent-foreground/80">
                            <Quote className="mr-2 h-4 w-4 text-accent" />
                            AI-Generated Hook (on image):
                         </Label>
-                        <p className="text-sm text-accent-foreground mt-1 italic">"{generatedPost.hookText}"</p>
+                        <p className="text-sm text-accent-foreground mt-1 italic">"{generatedPost?.hookText || aiGeneratedHook}"</p>
                       </div>
                   )}
 
@@ -643,7 +698,7 @@ export default function AetherPostGenerator() {
                         rows={6}
                         className="mt-2 text-sm"
                         placeholder="Edit your generated post content here."
-                        disabled={!generatedPost && !isLoading}
+                        disabled={!generatedPost && !isLoading && !editedPostText}
                       />
                     }
                   </div>
@@ -657,7 +712,7 @@ export default function AetherPostGenerator() {
                           <Badge key={index} variant="secondary" className="text-sm bg-accent/20 text-accent-foreground hover:bg-accent/30">{`#${tag.replace(/^#/, '')}`}</Badge>
                         ))
                       ) : (
-                        generatedPost && <p className="text-sm text-muted-foreground">No hashtags generated.</p>
+                        (generatedPost || editedPostText) && <p className="text-sm text-muted-foreground">No hashtags generated.</p> // Show "No hashtags" if post was attempted
                       )}
                     </div>
                     }
@@ -672,5 +727,3 @@ export default function AetherPostGenerator() {
     </TooltipProvider>
   );
 }
-
-    
