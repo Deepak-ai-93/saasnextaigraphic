@@ -278,48 +278,54 @@ export default function AetherPostGenerator() {
   
   const getPlaceholderDataAiHint = () => {
     let hint = "";
-    if (imageType) hint += imageType.toLowerCase().split(" ")[0] + " ";
-    if (niche) hint += niche.toLowerCase().split(" ")[0] + " ";
-    if (postType) hint += postType.toLowerCase().split(" ")[0];
+    if (imageVisualDescription) {
+        hint = imageVisualDescription.toLowerCase().split(/\s+/).slice(0, 2).join(" ");
+    }
+    if (!hint && postTopic) {
+        hint = postTopic.toLowerCase().split(/\s+/).slice(0, 2).join(" ");
+    }
+    if (!hint && niche) hint += niche.toLowerCase().split(" ")[0] + " ";
+    if (!hint && category) hint += category.toLowerCase().split(" ")[0];
+    
     if (!hint && platform) {
        switch(platform) {
         case 'instagram': hint = "lifestyle social"; break;
-        case 'facebook': hint = "community connection"; break;
+        case 'facebook': hint = "community connect"; break; // changed
         case 'x': hint = "news update"; break;
         default: hint = "social media";
       }
     }
-    return hint.trim() || "abstract background";
+    return hint.trim().split(/\s+/).slice(0, 2).join(" ") || "abstract background";
   }
 
   return (
     <TooltipProvider>
     <div className="min-h-screen bg-background p-4 md:p-8">
-      <header className="mb-8 text-center">
-        <h1 className="text-5xl font-bold text-primary flex items-center justify-center space-x-2">
-          <Wand2 size={48} className="text-accent" />
+      <header className="mb-6 md:mb-8 text-center">
+        <h1 className="text-4xl md:text-5xl font-bold text-primary flex items-center justify-center space-x-2">
+          <Wand2 size={40} className="text-accent md:size-48" /> {/* Adjusted icon size */}
           <span>AetherPost</span>
         </h1>
-        <p className="text-muted-foreground mt-2 text-lg">AI-Powered Social Media Content Creation</p>
+        <p className="text-muted-foreground mt-2 text-base md:text-lg">AI-Powered Social Media Content Creation</p>
       </header>
 
       {error && (
-        <Alert variant="destructive" className="mb-6">
+        <Alert variant="destructive" className="mb-6 max-w-3xl mx-auto">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-7xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 max-w-7xl mx-auto">
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle className="text-2xl flex items-center"><Edit3 className="mr-2 h-6 w-6 text-primary" />Create Your Post</CardTitle>
+            <CardTitle className="text-xl md:text-2xl flex items-center"><Edit3 className="mr-2 h-5 w-5 md:h-6 md:w-6 text-primary" />Create Your Post</CardTitle>
             <CardDescription>Describe your ideal post and let AI do the magic!</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-4 md:space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="postTopic" className="text-lg flex items-center">
+              <Label htmlFor="postTopic" className="text-base font-medium flex items-center">
                 Post Topic/Idea <span className="text-destructive ml-1">*</span>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -336,13 +342,12 @@ export default function AetherPostGenerator() {
                 value={postTopic}
                 onChange={(e) => setPostTopic(e.target.value)}
                 rows={3}
-                className="text-base"
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="imageVisualDescription" className="text-lg flex items-center">
+              <Label htmlFor="imageVisualDescription" className="text-base font-medium flex items-center">
                 Image Visual Description <span className="text-destructive ml-1">*</span>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -359,31 +364,28 @@ export default function AetherPostGenerator() {
                 value={imageVisualDescription}
                 onChange={(e) => setImageVisualDescription(e.target.value)}
                 rows={3}
-                className="text-base"
                 required
               />
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="niche" className="text-lg">Niche <span className="text-destructive ml-1">*</span></Label>
+                <Label htmlFor="niche" className="text-base font-medium">Niche <span className="text-destructive ml-1">*</span></Label>
                 <Input
                   id="niche"
                   placeholder="e.g., Food, Travel, Tech"
                   value={niche}
                   onChange={(e) => setNiche(e.target.value)}
-                  className="text-base"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="category" className="text-lg">Category <span className="text-destructive ml-1">*</span></Label>
+                <Label htmlFor="category" className="text-base font-medium">Category <span className="text-destructive ml-1">*</span></Label>
                 <Input
                   id="category"
                   placeholder="e.g., Coffee Shop, Mountain Landscape"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="text-base"
                   required
                 />
               </div>
@@ -391,7 +393,7 @@ export default function AetherPostGenerator() {
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="postType" className="text-lg flex items-center">
+                <Label htmlFor="postType" className="text-base font-medium flex items-center">
                   Post Type
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -403,13 +405,13 @@ export default function AetherPostGenerator() {
                   </Tooltip>
                 </Label>
                 <Select value={postType} onValueChange={(value: string) => setPostType(value === "---" ? "" : value)}>
-                  <SelectTrigger id="postType" className="w-full text-base">
+                  <SelectTrigger id="postType" className="w-full">
                     <SelectValue placeholder="Select post type (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="---" className="text-base text-muted-foreground">Clear selection</SelectItem>
+                    <SelectItem value="---" className="text-muted-foreground">Clear selection</SelectItem>
                     {postTypeOptions.map((type) => (
-                      <SelectItem key={type} value={type} className="text-base">
+                      <SelectItem key={type} value={type}>
                         {type}
                       </SelectItem>
                     ))}
@@ -417,14 +419,14 @@ export default function AetherPostGenerator() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="imageType" className="text-lg">Image Type <span className="text-destructive ml-1">*</span></Label>
+                <Label htmlFor="imageType" className="text-base font-medium">Image Type <span className="text-destructive ml-1">*</span></Label>
                 <Select value={imageType} onValueChange={(value: string) => setImageType(value)}>
-                  <SelectTrigger id="imageType" className="w-full text-base">
+                  <SelectTrigger id="imageType" className="w-full">
                     <SelectValue placeholder="Select image type" />
                   </SelectTrigger>
                   <SelectContent>
                     {imageTypeOptions.map((type) => (
-                      <SelectItem key={type} value={type} className="text-base">
+                      <SelectItem key={type} value={type}>
                         {type}
                       </SelectItem>
                     ))}
@@ -435,10 +437,10 @@ export default function AetherPostGenerator() {
 
             <Separator />
             <div>
-                <h3 className="text-lg font-medium mb-3 flex items-center"><Palette className="mr-2 h-5 w-5 text-primary" />Overlay Text Styling</h3>
+                <h3 className="text-base font-semibold mb-3 flex items-center"><Palette className="mr-2 h-5 w-5 text-primary" />Overlay Text Styling</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="space-y-2">
-                        <Label htmlFor="overlayFontStyle" className="text-base flex items-center">
+                        <Label htmlFor="overlayFontStyle" className="text-sm font-medium flex items-center">
                             Font Style
                             <Tooltip>
                                 <TooltipTrigger asChild><Info className="ml-1 h-4 w-4 text-muted-foreground cursor-help" /></TooltipTrigger>
@@ -446,18 +448,18 @@ export default function AetherPostGenerator() {
                             </Tooltip>
                         </Label>
                         <Select value={overlayFontStyle} onValueChange={setOverlayFontStyle}>
-                            <SelectTrigger id="overlayFontStyle" className="w-full text-base">
+                            <SelectTrigger id="overlayFontStyle" className="w-full">
                                 <SelectValue placeholder="Select font style" />
                             </SelectTrigger>
                             <SelectContent>
                                 {overlayFontStyleOptions.map((style) => (
-                                <SelectItem key={style} value={style} className="text-base">{style}</SelectItem>
+                                <SelectItem key={style} value={style}>{style}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="overlayAlignment" className="text-base flex items-center">
+                        <Label htmlFor="overlayAlignment" className="text-sm font-medium flex items-center">
                             Alignment
                              <Tooltip>
                                 <TooltipTrigger asChild><Info className="ml-1 h-4 w-4 text-muted-foreground cursor-help" /></TooltipTrigger>
@@ -465,18 +467,18 @@ export default function AetherPostGenerator() {
                             </Tooltip>
                         </Label>
                         <Select value={overlayAlignment} onValueChange={setOverlayAlignment}>
-                            <SelectTrigger id="overlayAlignment" className="w-full text-base">
+                            <SelectTrigger id="overlayAlignment" className="w-full">
                                 <SelectValue placeholder="Select alignment" />
                             </SelectTrigger>
                             <SelectContent>
                                 {overlayAlignmentOptions.map((align) => (
-                                <SelectItem key={align} value={align} className="text-base">{align}</SelectItem>
+                                <SelectItem key={align} value={align}>{align}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="overlayFontSize" className="text-base flex items-center">
+                        <Label htmlFor="overlayFontSize" className="text-sm font-medium flex items-center">
                             Font Size
                              <Tooltip>
                                 <TooltipTrigger asChild><Info className="ml-1 h-4 w-4 text-muted-foreground cursor-help" /></TooltipTrigger>
@@ -484,12 +486,12 @@ export default function AetherPostGenerator() {
                             </Tooltip>
                         </Label>
                         <Select value={overlayFontSize} onValueChange={setOverlayFontSize}>
-                            <SelectTrigger id="overlayFontSize" className="w-full text-base">
+                            <SelectTrigger id="overlayFontSize" className="w-full">
                                 <SelectValue placeholder="Select font size" />
                             </SelectTrigger>
                             <SelectContent>
                                 {overlayFontSizeOptions.map((size) => (
-                                <SelectItem key={size} value={size} className="text-base">{size}</SelectItem>
+                                <SelectItem key={size} value={size}>{size}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
@@ -500,9 +502,9 @@ export default function AetherPostGenerator() {
 
 
             <div className="space-y-2">
-              <Label htmlFor="platform" className="text-lg">Social Media Platform</Label>
+              <Label htmlFor="platform" className="text-base font-medium">Social Media Platform</Label>
               <Select value={platform} onValueChange={(value: Platform) => setPlatform(value)}>
-                <SelectTrigger id="platform" className="w-full text-base">
+                <SelectTrigger id="platform" className="w-full">
                   <SelectValue placeholder="Select platform" />
                 </SelectTrigger>
                 <SelectContent>
@@ -510,7 +512,7 @@ export default function AetherPostGenerator() {
                     const pKey = key as Platform;
                     const IconComponent = platformIcons[pKey];
                     return (
-                      <SelectItem key={pKey} value={pKey} className="text-base">
+                      <SelectItem key={pKey} value={pKey}>
                         <div className="flex items-center">
                           <IconComponent className="mr-2 h-5 w-5" />
                           {pKey.charAt(0).toUpperCase() + pKey.slice(1)}
@@ -522,7 +524,7 @@ export default function AetherPostGenerator() {
               </Select>
             </div>
 
-            <Button onClick={handleGeneratePost} disabled={isLoading || isImageLoading} className="w-full text-lg py-6 bg-primary hover:bg-primary/90">
+            <Button onClick={handleGeneratePost} disabled={isLoading || isImageLoading} className="w-full text-base md:text-lg py-3 md:py-4 bg-primary hover:bg-primary/90">
               {isLoading ? (
                 <>
                   <RotateCcw className="mr-2 h-5 w-5 animate-spin" />
@@ -540,12 +542,12 @@ export default function AetherPostGenerator() {
 
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle className="text-2xl flex items-center"><ImageIcon className="mr-2 h-6 w-6 text-primary" />Post Preview & Edit</CardTitle>
+            <CardTitle className="text-xl md:text-2xl flex items-center"><ImageIcon className="mr-2 h-5 w-5 md:h-6 md:w-6 text-primary" />Post Preview & Edit</CardTitle>
              <CardDescription>Review and refine your AI-generated content.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-4 md:space-y-6">
             <div>
-              <Label className="text-lg mb-2 block">Image Preview ({platform})</Label>
+              <Label className="text-base font-medium mb-2 block">Image Preview ({platform})</Label>
               <div className={`w-full rounded-md border border-dashed border-border overflow-hidden bg-muted/30 ${platformAspectRatios[platform]}`}>
                 {isLoading || isImageLoading ? (
                    <Skeleton className={`w-full h-full ${platformAspectRatios[platform]}`} />
@@ -554,7 +556,7 @@ export default function AetherPostGenerator() {
                     src={currentImageUrl || `https://placehold.co/600x400.png?text=Your+AI+Image+Here`}
                     alt="Generated post image"
                     width={600}
-                    height={platform === 'instagram' ? 600 : (platform === 'facebook' ? 315 : 338) }
+                    height={platform === 'instagram' ? 600 : (platform === 'facebook' ? Math.round(600 / 1.91) : Math.round(600 * 9/16)) } // Recalculate height based on common widths
                     className="object-cover w-full h-full"
                     data-ai-hint={getPlaceholderDataAiHint()}
                     onError={() => setCurrentImageUrl(`https://placehold.co/600x400.png?text=Error+Loading+Image`)}
@@ -563,15 +565,15 @@ export default function AetherPostGenerator() {
                 )}
               </div>
               {generatedPost && generatedPost.hookText && (
-                <div className="mt-2 p-3 bg-accent/10 rounded-md">
-                  <Label className="text-base flex items-center text-accent-foreground/80">
+                <div className="mt-3 p-3 bg-accent/10 rounded-md">
+                  <Label className="text-sm font-medium flex items-center text-accent-foreground/80">
                      <Quote className="mr-2 h-4 w-4 text-accent" />
                      AI-Generated Hook (on image):
                   </Label>
                   <p className="text-sm text-accent-foreground mt-1 italic">"{generatedPost.hookText}"</p>
                 </div>
               )}
-              <div className="mt-4 flex space-x-3">
+              <div className="mt-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
                 <Button onClick={handleRegenerateImage} variant="outline" disabled={isLoading || isImageLoading || !imageVisualDescription || !niche || !category} className="flex-1">
                   {isImageLoading ? (
                      <>
@@ -595,7 +597,7 @@ export default function AetherPostGenerator() {
             {generatedPost || isLoading ? (
               <>
                 <div>
-                  <Label htmlFor="editedPostText" className="text-lg flex items-center">
+                  <Label htmlFor="editedPostText" className="text-base font-medium flex items-center">
                     <MessageSquareQuote className="mr-2 h-5 w-5 text-primary" />
                     Generated Post Text
                      <Tooltip>
@@ -613,13 +615,13 @@ export default function AetherPostGenerator() {
                       value={editedPostText}
                       onChange={(e) => setEditedPostText(e.target.value)}
                       rows={6}
-                      className="mt-2 text-base"
+                      className="mt-2"
                       placeholder="Edit your generated post content here."
                     />
                   }
                 </div>
                 <div>
-                  <Label className="text-lg">Hashtags</Label>
+                  <Label className="text-base font-medium">Hashtags</Label>
                   {isLoading && !generatedPost ? <Skeleton className="h-8 w-full mt-2" /> :
                   <div className="mt-2 flex flex-wrap gap-2">
                     {generatedPost?.hashtags && generatedPost.hashtags.length > 0 ? (
