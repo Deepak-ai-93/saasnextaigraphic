@@ -39,18 +39,26 @@ const platformAspectRatios: Record<Platform, string> = {
 };
 
 const imageTypeOptions = [
-  "Photography",
   "Illustration",
+  "Photography",
   "3D Render",
-  "Abstract Art",
-  "Minimalist Design",
-  "Vintage Style",
-  "Futuristic Design",
-  "Watercolor Art",
-  "Cartoon / Comic Style",
-  "Pop Art",
-  "Surrealism",
-  "Graffiti Style",
+  "Flat Design",
+  "Collage",
+  "Animated GIF / Short Clip", // Note: Current AI generates static images. This might be for future or conceptual.
+  "Quote Post", // AI will overlay text on an image.
+  "Infographic", // AI will attempt a visual representation of data.
+  "Carousel / Slider", // App generates single image; carousel is platform feature.
+  "Before & After",
+  "Step-by-Step / How-To",
+  "Product Showcase",
+  "User-Generated Content", // AI might generate image in style of UGC.
+  "Behind-the-Scenes",
+  "Promo / Sale Banner",
+  "Event Highlight",
+  "Minimalist",
+  "Luxury / Premium",
+  "Bold & Vibrant",
+  "Whimsical / Playful",
 ];
 
 const postTypeOptions = [
@@ -660,6 +668,8 @@ export default function AetherPostGenerator() {
   );
 }
 
+
+    
 
     
 
