@@ -284,6 +284,7 @@ export default function AetherPostGenerator() {
     if (!hint && postTopic) {
         hint = postTopic.toLowerCase().split(/\s+/).slice(0, 2).join(" ");
     }
+     // Max 2 words from here
     if (!hint && niche) hint += niche.toLowerCase().split(" ")[0] + " ";
     if (!hint && category) hint += category.toLowerCase().split(" ")[0];
     
@@ -303,7 +304,7 @@ export default function AetherPostGenerator() {
     <div className="min-h-screen bg-background p-4 md:p-8">
       <header className="mb-6 md:mb-8 text-center">
         <h1 className="text-4xl md:text-5xl font-bold text-primary flex items-center justify-center space-x-2">
-          <Wand2 size={40} className="text-accent md:size-48" /> {/* Adjusted icon size */}
+          <Wand2 size={40} className="text-accent md:size-48" />
           <span>AetherPost</span>
         </h1>
         <p className="text-muted-foreground mt-2 text-base md:text-lg">AI-Powered Social Media Content Creation</p>
@@ -318,110 +319,6 @@ export default function AetherPostGenerator() {
       )}
 
       <div className="grid grid-cols-1 gap-6 md:gap-8 max-w-7xl mx-auto">
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-xl md:text-2xl flex items-center"><ImageIcon className="mr-2 h-5 w-5 md:h-6 md:w-6 text-primary" />Post Preview & Edit</CardTitle>
-             <CardDescription>Review and refine your AI-generated content.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4 md:space-y-6">
-            <div>
-              <Label className="text-base font-medium mb-2 block">Image Preview ({platform})</Label>
-              <div className={`w-full rounded-md border border-dashed border-border overflow-hidden bg-muted/30 ${platformAspectRatios[platform]}`}>
-                {isLoading || isImageLoading ? (
-                   <Skeleton className={`w-full h-full ${platformAspectRatios[platform]}`} />
-                ) : (
-                  <Image
-                    src={currentImageUrl || `https://placehold.co/600x400.png?text=Your+AI+Image+Here`}
-                    alt="Generated post image"
-                    width={600}
-                    height={platform === 'instagram' ? 600 : (platform === 'facebook' ? Math.round(600 / 1.91) : Math.round(600 * 9/16)) } // Recalculate height based on common widths
-                    className="object-cover w-full h-full"
-                    data-ai-hint={getPlaceholderDataAiHint()}
-                    onError={() => setCurrentImageUrl(`https://placehold.co/600x400.png?text=Error+Loading+Image`)}
-                    unoptimized={currentImageUrl.startsWith('data:image')}
-                  />
-                )}
-              </div>
-              {generatedPost && generatedPost.hookText && (
-                <div className="mt-3 p-3 bg-accent/10 rounded-md">
-                  <Label className="text-sm font-medium flex items-center text-accent-foreground/80">
-                     <Quote className="mr-2 h-4 w-4 text-accent" />
-                     AI-Generated Hook (on image):
-                  </Label>
-                  <p className="text-sm text-accent-foreground mt-1 italic">"{generatedPost.hookText}"</p>
-                </div>
-              )}
-              <div className="mt-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
-                <Button onClick={handleRegenerateImage} variant="outline" disabled={isLoading || isImageLoading || !imageVisualDescription || !niche || !category} className="flex-1">
-                  {isImageLoading ? (
-                     <>
-                      <RotateCcw className="mr-2 h-4 w-4 animate-spin" />
-                      Regenerating...
-                    </>
-                  ) : (
-                    <>
-                      <RotateCcw className="mr-2 h-4 w-4" />
-                      Regenerate Image & Hook
-                    </>
-                  )}
-                </Button>
-                <Button onClick={handleDownloadImage} variant="outline" disabled={isLoading || isImageLoading || !generatedPost || currentImageUrl.startsWith("https://placehold.co")} className="flex-1">
-                  <Download className="mr-2 h-4 w-4" />
-                  Download Image
-                </Button>
-              </div>
-            </div>
-
-            {generatedPost || isLoading ? (
-              <>
-                <div>
-                  <Label htmlFor="editedPostText" className="text-base font-medium flex items-center">
-                    <MessageSquareQuote className="mr-2 h-5 w-5 text-primary" />
-                    Generated Post Text
-                     <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Info className="ml-2 h-4 w-4 text-muted-foreground cursor-help" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="max-w-xs">This is the main text content for your social media post. You can edit it here. This text is NOT directly on the image.</p>
-                        </TooltipContent>
-                      </Tooltip>
-                  </Label>
-                  {isLoading && !generatedPost ? <Skeleton className="h-24 w-full mt-2" /> :
-                    <Textarea
-                      id="editedPostText"
-                      value={editedPostText}
-                      onChange={(e) => setEditedPostText(e.target.value)}
-                      rows={6}
-                      className="mt-2"
-                      placeholder="Edit your generated post content here."
-                    />
-                  }
-                </div>
-                <div>
-                  <Label className="text-base font-medium">Hashtags</Label>
-                  {isLoading && !generatedPost ? <Skeleton className="h-8 w-full mt-2" /> :
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {generatedPost?.hashtags && generatedPost.hashtags.length > 0 ? (
-                      generatedPost.hashtags.map((tag, index) => (
-                        <Badge key={index} variant="secondary" className="text-sm bg-accent/20 text-accent-foreground hover:bg-accent/30">{`#${tag.replace(/^#/, '')}`}</Badge>
-                      ))
-                    ) : (
-                      <p className="text-sm text-muted-foreground">No hashtags generated.</p>
-                    )}
-                  </div>
-                  }
-                </div>
-              </>
-            ) : (
-              <div className="text-center py-10 text-muted-foreground">
-                <ImageIcon size={48} className="mx-auto mb-2" />
-                <p>Your generated post preview will appear here.</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="text-xl md:text-2xl flex items-center"><Edit3 className="mr-2 h-5 w-5 md:h-6 md:w-6 text-primary" />Create Your Post</CardTitle>
@@ -628,7 +525,7 @@ export default function AetherPostGenerator() {
               </Select>
             </div>
 
-            <Button onClick={handleGeneratePost} disabled={isLoading || isImageLoading} className="w-full text-base md:text-lg py-3 md:py-4 bg-primary hover:bg-primary/90">
+            <Button onClick={handleGeneratePost} disabled={isLoading || isImageLoading} className="w-full text-base py-3 md:text-lg md:py-4 bg-primary hover:bg-primary/90">
               {isLoading ? (
                 <>
                   <RotateCcw className="mr-2 h-5 w-5 animate-spin" />
@@ -644,9 +541,111 @@ export default function AetherPostGenerator() {
           </CardContent>
         </Card>
 
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-xl md:text-2xl flex items-center"><ImageIcon className="mr-2 h-5 w-5 md:h-6 md:w-6 text-primary" />Post Preview & Edit</CardTitle>
+             <CardDescription>Review and refine your AI-generated content.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 md:space-y-6">
+            <div>
+              <Label className="text-base font-medium mb-2 block">Image Preview ({platform})</Label>
+              <div className={`w-full rounded-md border border-dashed border-border overflow-hidden bg-muted/30 ${platformAspectRatios[platform]}`}>
+                {isLoading || isImageLoading ? (
+                   <Skeleton className={`w-full h-full ${platformAspectRatios[platform]}`} />
+                ) : (
+                  <Image
+                    src={currentImageUrl || `https://placehold.co/600x400.png?text=Your+AI+Image+Here`}
+                    alt="Generated post image"
+                    width={600}
+                    height={platform === 'instagram' ? 600 : (platform === 'facebook' ? Math.round(600 / 1.91) : Math.round(600 * 9/16)) }
+                    className="object-cover w-full h-full"
+                    data-ai-hint={getPlaceholderDataAiHint()}
+                    onError={() => setCurrentImageUrl(`https://placehold.co/600x400.png?text=Error+Loading+Image`)}
+                    unoptimized={currentImageUrl.startsWith('data:image')}
+                  />
+                )}
+              </div>
+              {(generatedPost && generatedPost.hookText) && (
+                <div className="mt-3 p-3 bg-accent/10 rounded-md">
+                  <Label className="text-sm font-medium flex items-center text-accent-foreground/80">
+                     <Quote className="mr-2 h-4 w-4 text-accent" />
+                     AI-Generated Hook (on image):
+                  </Label>
+                  <p className="text-sm text-accent-foreground mt-1 italic">"{generatedPost.hookText}"</p>
+                </div>
+              )}
+              <div className="mt-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+                <Button onClick={handleRegenerateImage} variant="outline" disabled={isLoading || isImageLoading || !imageVisualDescription || !niche || !category} className="flex-1">
+                  {isImageLoading ? (
+                     <>
+                      <RotateCcw className="mr-2 h-4 w-4 animate-spin" />
+                      Regenerating...
+                    </>
+                  ) : (
+                    <>
+                      <RotateCcw className="mr-2 h-4 w-4" />
+                      Regenerate Image & Hook
+                    </>
+                  )}
+                </Button>
+                <Button onClick={handleDownloadImage} variant="outline" disabled={isLoading || isImageLoading || !generatedPost || currentImageUrl.startsWith("https://placehold.co")} className="flex-1">
+                  <Download className="mr-2 h-4 w-4" />
+                  Download Image
+                </Button>
+              </div>
+            </div>
+
+            {generatedPost || isLoading ? (
+              <>
+                <div>
+                  <Label htmlFor="editedPostText" className="text-base font-medium flex items-center">
+                    <MessageSquareQuote className="mr-2 h-5 w-5 text-primary" />
+                    Generated Post Text
+                     <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="ml-2 h-4 w-4 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="max-w-xs">This is the main text content for your social media post. You can edit it here. This text is NOT directly on the image.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                  </Label>
+                  {isLoading && !generatedPost ? <Skeleton className="h-24 w-full mt-2" /> :
+                    <Textarea
+                      id="editedPostText"
+                      value={editedPostText}
+                      onChange={(e) => setEditedPostText(e.target.value)}
+                      rows={6}
+                      className="mt-2"
+                      placeholder="Edit your generated post content here."
+                    />
+                  }
+                </div>
+                <div>
+                  <Label className="text-base font-medium">Hashtags</Label>
+                  {isLoading && !generatedPost ? <Skeleton className="h-8 w-full mt-2" /> :
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {generatedPost?.hashtags && generatedPost.hashtags.length > 0 ? (
+                      generatedPost.hashtags.map((tag, index) => (
+                        <Badge key={index} variant="secondary" className="text-sm bg-accent/20 text-accent-foreground hover:bg-accent/30">{`#${tag.replace(/^#/, '')}`}</Badge>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No hashtags generated.</p>
+                    )}
+                  </div>
+                  }
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-10 text-muted-foreground">
+                <ImageIcon size={48} className="mx-auto mb-2" />
+                <p>Your generated post preview will appear here.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
     </TooltipProvider>
   );
 }
-
