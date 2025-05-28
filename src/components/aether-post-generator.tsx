@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Download, ImageIcon, Instagram, Facebook, Twitter, Edit3, RotateCcw, AlertCircle, Wand2, Info, MessageSquareQuote } from "lucide-react";
+import { Download, ImageIcon, Instagram, Facebook, Twitter, Edit3, RotateCcw, AlertCircle, Wand2, Info, MessageSquareQuote, Highlighter } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -66,13 +66,14 @@ const postTypeOptions = [
 export default function AetherPostGenerator() {
   const [postTopic, setPostTopic] = useState<string>("");
   const [imageVisualDescription, setImageVisualDescription] = useState<string>("");
+  const [imageOverlayText, setImageOverlayText] = useState<string>("");
   const [niche, setNiche] = useState<string>("");
   const [category, setCategory] = useState<string>("");
   const [imageType, setImageType] = useState<string>(imageTypeOptions[0]);
   const [postType, setPostType] = useState<string>("");
   const [platform, setPlatform] = useState<Platform>("instagram");
   const [generatedPost, setGeneratedPost] = useState<GeneratedPost | null>(null);
-  const [editedText, setEditedText] = useState<string>("");
+  const [editedPostText, setEditedPostText] = useState<string>(""); // For the main post body
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isImageLoading, setIsImageLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -91,6 +92,7 @@ export default function AetherPostGenerator() {
       setError("Please enter an Image Visual Description.");
       return false;
     }
+    // imageOverlayText is optional
     if (!niche.trim()) {
       setError("Niche is required.");
       return false;
@@ -109,28 +111,28 @@ export default function AetherPostGenerator() {
     setIsLoading(true);
     setError(null);
     setGeneratedPost(null);
-    setEditedText("");
+    setEditedPostText("");
     setCurrentImageUrl("https://placehold.co/600x400.png?text=Generating...");
 
     try {
-      const contentInput: GeneratePostContentInput = { 
+      const contentInput: GeneratePostContentInput = {
         description: postTopic,
-        postType: postType || undefined, // Pass postType if selected
+        postType: postType || undefined,
       };
       const contentResult = await generatePostContent(contentInput);
       if (!contentResult || !contentResult.postText) {
         throw new Error("Failed to generate post text.");
       }
-      setEditedText(contentResult.postText);
+      setEditedPostText(contentResult.postText); // Set the main post content
 
       const imageInput: GeneratePostImageInput = {
         imageVisualPrompt: imageVisualDescription,
-        overlayText: contentResult.postText,
+        overlayText: imageOverlayText, // Use the dedicated overlay text
         niche,
         category,
         imageType,
         postTopic: postTopic,
-        postType: postType || undefined, // Pass postType if selected
+        postType: postType || undefined,
       };
 
       const imageResult = await generatePostImage(imageInput);
@@ -153,15 +155,10 @@ export default function AetherPostGenerator() {
   const handleRegenerateImage = async () => {
     if (!validateInputs(true)) return;
 
-    let textForImageRegen = editedText.trim();
-    if (!textForImageRegen && generatedPost) {
-        textForImageRegen = generatedPost.postText.trim();
-    }
-
-    if (!textForImageRegen) {
-        setError("Please provide text for the image overlay in the 'Post Text' field before regenerating the image.");
-        return;
-    }
+    // For image regeneration, the overlay text comes from the dedicated input field.
+    // No need to check editedPostText for this purpose anymore.
+    // We can remove the check for textForImageRegen or make it specifically for imageOverlayText if we want to make it mandatory for regen.
+    // For now, let's assume if imageOverlayText is empty, no text is overlaid.
 
     setIsImageLoading(true);
     setError(null);
@@ -171,12 +168,12 @@ export default function AetherPostGenerator() {
     try {
       const imageInput: GeneratePostImageInput = {
         imageVisualPrompt: imageVisualDescription,
-        overlayText: textForImageRegen,
+        overlayText: imageOverlayText, // Use the dedicated overlay text
         niche,
         category,
         imageType,
         postTopic: postTopic,
-        postType: postType || undefined, // Pass postType if selected
+        postType: postType || undefined,
       };
       const imageResult = await generatePostImage(imageInput);
       if (imageResult && imageResult.imageUri) {
@@ -190,7 +187,7 @@ export default function AetherPostGenerator() {
     } catch (err) {
       console.error(err);
       setError(err instanceof Error ? err.message : "An unknown error occurred during image regeneration.");
-      setCurrentImageUrl(oldImageUrl); // Revert to old image on error
+      setCurrentImageUrl(oldImageUrl);
     } finally {
       setIsImageLoading(false);
     }
@@ -260,7 +257,7 @@ export default function AetherPostGenerator() {
                     <Info className="ml-2 h-4 w-4 text-muted-foreground cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p className="max-w-xs">The main theme or subject for your post's text content and hashtags.</p>
+                    <p className="max-w-xs">The main theme for your post's text content and hashtags.</p>
                   </TooltipContent>
                 </Tooltip>
               </Label>
@@ -292,9 +289,31 @@ export default function AetherPostGenerator() {
                 placeholder="e.g., A steaming latte art heart on a rustic wooden table, soft morning light, a few coffee beans scattered around."
                 value={imageVisualDescription}
                 onChange={(e) => setImageVisualDescription(e.target.value)}
-                rows={4}
+                rows={3}
                 className="text-base"
                 required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="imageOverlayText" className="text-lg flex items-center">
+                Text to Overlay on Image (Hook/Quote)
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="ml-2 h-4 w-4 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="max-w-xs">Enter the exact text (e.g., a short hook or quote) you want to appear on the image. Leave blank for no text overlay.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </Label>
+              <Textarea
+                id="imageOverlayText"
+                placeholder="e.g., 'Fresh Brews & Good Moods!'"
+                value={imageOverlayText}
+                onChange={(e) => setImageOverlayText(e.target.value)}
+                rows={2}
+                className="text-base"
               />
             </div>
             
@@ -454,25 +473,26 @@ export default function AetherPostGenerator() {
             {generatedPost || isLoading ? (
               <>
                 <div>
-                  <Label htmlFor="editedText" className="text-lg flex items-center">
-                    Post Text (Overlay on Image)
+                  <Label htmlFor="editedPostText" className="text-lg flex items-center">
+                    <MessageSquareQuote className="mr-2 h-5 w-5 text-primary" />
+                    Generated Post Text
                      <Tooltip>
                         <TooltipTrigger asChild>
                           <Info className="ml-2 h-4 w-4 text-muted-foreground cursor-help" />
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p className="max-w-xs">This text will be overlaid on the generated image. You can edit it here. Regenerate the image to see changes.</p>
+                          <p className="max-w-xs">This is the main text content for your social media post. You can edit it here. This text is NOT directly on the image.</p>
                         </TooltipContent>
                       </Tooltip>
                   </Label>
                   {isLoading && !generatedPost ? <Skeleton className="h-24 w-full mt-2" /> :
                     <Textarea
-                      id="editedText"
-                      value={editedText}
-                      onChange={(e) => setEditedText(e.target.value)}
+                      id="editedPostText"
+                      value={editedPostText}
+                      onChange={(e) => setEditedPostText(e.target.value)}
                       rows={6}
                       className="mt-2 text-base"
-                      placeholder="This text will be overlaid on the image. Edit if needed."
+                      placeholder="Edit your generated post content here."
                     />
                   }
                 </div>
@@ -482,7 +502,7 @@ export default function AetherPostGenerator() {
                   <div className="mt-2 flex flex-wrap gap-2">
                     {generatedPost?.hashtags && generatedPost.hashtags.length > 0 ? (
                       generatedPost.hashtags.map((tag, index) => (
-                        <Badge key={index} variant="secondary" className="text-sm bg-accent/20 text-accent-foreground hover:bg-accent/30">{tag}</Badge>
+                        <Badge key={index} variant="secondary" className="text-sm bg-accent/20 text-accent-foreground hover:bg-accent/30">{`#${tag.replace(/^#/, '')}`}</Badge>
                       ))
                     ) : (
                       <p className="text-sm text-muted-foreground">No hashtags generated.</p>
@@ -504,3 +524,4 @@ export default function AetherPostGenerator() {
     </TooltipProvider>
   );
 }
+
