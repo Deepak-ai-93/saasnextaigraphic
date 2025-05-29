@@ -100,7 +100,7 @@ Key considerations for the hook text integration:
       imagePrompt += `\n\nGenerate a high-quality, detailed image based purely on the visual description ("${input.imageVisualPrompt}"), Niche ("${input.niche}"), Category ("${input.category}"), Image Style ("${input.imageType}"), and post context. No text should be overlaid on this image.`;
     }
     
-    imagePrompt += `\n\nThe overall image composition and style should be suitable for the visual prompt, niche, category, and specified image type. Aim for an engaging, high-quality, and aesthetically pleasing result that looks professionally crafted. Ensure the image is detailed and visually rich according to these inputs.`;
+    imagePrompt += `\n\nThis image is intended for a social media post. Therefore, ensure the composition is engaging, high-quality, and aesthetically pleasing, looking professionally crafted. The image should be detailed and visually rich. **For platforms like Instagram, a square aspect ratio is ideal; please prioritize generating a square image unless the visual description or image style strongly dictates otherwise.** The final image should be well-suited for a typical social media feed.`;
     
     const {media} = await ai.generate({
       model: 'googleai/gemini-2.0-flash-exp',
