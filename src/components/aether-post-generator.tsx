@@ -7,7 +7,7 @@ import { generatePostContent, type GeneratePostContentInput, type GeneratePostCo
 import { generatePostImage, type GeneratePostImageInput } from "@/ai/flows/generate-post-image";
 import { generateOverlayHook, type GenerateOverlayHookInput } from "@/ai/flows/generate-overlay-hook";
 import { generateTopicSuggestion, type GenerateTopicSuggestionInput } from "@/ai/flows/generate-topic-suggestion";
-import { generateVisualDescriptionSuggestion, type GenerateVisualDescriptionSuggestionInput } from "@/ai/flows/generate-visual-description-suggestion"; // Added
+import { generateVisualDescriptionSuggestion, type GenerateVisualDescriptionSuggestionInput } from "@/ai/flows/generate-visual-description-suggestion";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -107,8 +107,8 @@ export default function AetherPostGenerator() {
   const [isTopicSuggestionLoading, setIsTopicSuggestionLoading] = useState<boolean>(false);
 
   const [imageVisualDescription, setImageVisualDescription] = useState<string>("");
-  const [visualDescriptionSuggestion, setVisualDescriptionSuggestion] = useState<string | null>(null); // Added
-  const [isVisualDescriptionSuggestionLoading, setIsVisualDescriptionSuggestionLoading] = useState<boolean>(false); // Added
+  const [visualDescriptionSuggestion, setVisualDescriptionSuggestion] = useState<string | null>(null);
+  const [isVisualDescriptionSuggestionLoading, setIsVisualDescriptionSuggestionLoading] = useState<boolean>(false);
 
   const [aiGeneratedHook, setAiGeneratedHook] = useState<string>("");
   const [niche, setNiche] = useState<string>("");
@@ -350,7 +350,7 @@ export default function AetherPostGenerator() {
         setCurrentImageUrl(imageResult.imageUri);
         if (generatedPost) {
           setGeneratedPost(prev => prev ? {...prev, imageUri: imageResult.imageUri, hookText: currentHookText!} : null);
-        } else if (editedPostText) {
+        } else if (editedPostText) { // If there was previous text content but no full generatedPost object yet
           setGeneratedPost({
             postText: editedPostText,
             hashtags: generatedPost?.hashtags || [],
@@ -365,7 +365,7 @@ export default function AetherPostGenerator() {
      {
       console.error(err);
       setError(err instanceof Error ? err.message : "An unknown error occurred during image regeneration.");
-      setCurrentImageUrl(oldImageUrl);
+      setCurrentImageUrl(oldImageUrl); // Revert to old image on error
     } finally {
       setIsImageLoading(false);
     }
@@ -775,13 +775,13 @@ export default function AetherPostGenerator() {
                   <div>
                     <Label className="text-base font-medium">Hashtags</Label>
                     {(isLoading && !generatedPost) ? <Skeleton className="h-12 w-full mt-2" /> :
-                    <div className="mt-2 flex flex-wrap gap-2">
+                    <div className="mt-2">
                       {generatedPost?.hashtags && generatedPost.hashtags.length > 0 ? (
-                        generatedPost.hashtags.map((tag, index) => (
-                          <Badge key={index} variant="secondary" className="text-sm bg-accent/20 text-accent-foreground hover:bg-accent/30">{`#${tag.replace(/^#/, '')}`}</Badge>
-                        ))
+                        <p className="text-sm text-muted-foreground p-2 bg-secondary/30 rounded-md break-words">
+                          {generatedPost.hashtags.map(tag => `#${tag.replace(/^#/, '')}`).join(' ')}
+                        </p>
                       ) : (
-                        (generatedPost || editedPostText) && <p className="text-sm text-muted-foreground">No hashtags generated.</p> // Show "No hashtags" if post was attempted
+                        (generatedPost || editedPostText) && <p className="text-sm text-muted-foreground">No hashtags generated.</p>
                       )}
                     </div>
                     }
@@ -796,3 +796,5 @@ export default function AetherPostGenerator() {
     </TooltipProvider>
   );
 }
+
+    
