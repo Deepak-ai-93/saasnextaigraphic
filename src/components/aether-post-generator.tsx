@@ -97,7 +97,7 @@ const overlayAlignmentOptions = [
 ];
 
 const overlayFontSizeOptions = [
-  "Small", "Medium", "Large", "Extra Large",
+  "Small", "Medium",
 ];
 
 
