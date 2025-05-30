@@ -30,7 +30,7 @@ const GeneratePostImageInputSchema = z.object({
   postType: z.string().optional().describe('The type of the post (e.g., Tips, Educational, Promotional) for additional context.'),
   overlayFontStyle: z.string().optional().describe('The desired font style for the overlay text (e.g., Modern & Clean, Elegant Script, Magazine Headline).'),
   overlayAlignment: z.string().optional().describe('The alignment of the overlay text on the image (e.g., Top Left, Middle Center, Bottom Right).'),
-  overlayFontSize: z.string().optional().describe('The relative font size for the overlay text (e.g., Small, Medium, Large, Extra Large).'),
+  overlayFontSize: z.string().optional().describe('The relative font size for the overlay text (e.g., Small, Medium).'),
 });
 export type GeneratePostImageInput = z.infer<typeof GeneratePostImageInputSchema>;
 
@@ -54,25 +54,25 @@ const generatePostImageFlow = ai.defineFlow(
     outputSchema: GeneratePostImageOutputSchema,
   },
   async (input: GeneratePostImageInput) => {
-    let imagePrompt = `You are an AI social media image generator acting as a professional graphic designer.
-Your primary task is to create a detailed and visually rich image based on the following visual description: "${input.imageVisualPrompt}".
-This image is for a social media post related to the general topic: "${input.postTopic}".
+    let imagePrompt = `You are an AI image generation specialist and professional graphic designer.
+Your primary task is to **synthesize all the provided information** to create a detailed, visually rich, and contextually relevant image suitable for a high-impact social media post.
+The image's core content and composition must be based on the **visual description**: "${input.imageVisualPrompt}".
+This image is for a social media post related to the **general topic**: "${input.postTopic}".
 
-The image must strictly adhere to the following parameters:
-- Niche: "${input.niche}"
-- Category: "${input.category}"
-- Image Style: "${input.imageType}"`;
+The image creation must strictly incorporate and harmonize the following:
+- **Niche**: "${input.niche}"
+- **Category**: "${input.category}"
+- **Image Style**: "${input.imageType}"`;
 
     if (input.postType) {
-      imagePrompt += `\n- Post Type Context: This image is part of a "${input.postType}" post. Consider this for the overall mood or subtle thematic elements, ensuring it complements the main visual description.`;
+      imagePrompt += `\n- **Post Type Context**: The image is part of a "${input.postType}" post. This must influence the overall mood, subtle thematic elements, and ensure it complements the main visual description and topic.`;
     }
 
+    // Instruction for text overlay or no text
     if (input.overlayText && input.overlayText.trim() !== '') {
-      // Emphasize generating the core image first, then integrating text.
-      imagePrompt += `\n\nFirst, focus on generating a high-quality, detailed image that perfectly matches the visual description: "${input.imageVisualPrompt}", while adhering to the Niche: "${input.niche}", Category: "${input.category}", and Image Style: "${input.imageType}".
-After this base image is established in your generation process, you will then **prominently and artistically integrate** the following AI-generated hook text onto it: "${input.overlayText}".
-
-**Hook Text Overlay Instructions (apply to the generated base image):**
+      imagePrompt += `\n\nAfter establishing a base image that meticulously fulfills all the above requirements (visual description, topic, niche, category, image style, and post type context), you will then **prominently and artistically integrate** the following AI-generated hook text onto it: "${input.overlayText}".`;
+      
+      imagePrompt += `\n\n**Hook Text Overlay Instructions (apply to the established base image):**
 The text must be seamlessly and professionally integrated into the generated image's design, appearing as a deliberate graphic element, not an afterthought.
 Think like a graphic designer creating a polished piece for social media:
 - The text's style, color, and placement must harmonize with the primary image aesthetic, mood, and the specified niche, category, and image type.
@@ -93,14 +93,25 @@ Key considerations for the hook text integration:
         imagePrompt += `\n- Text Alignment: Position the text on the primary image according to '${input.overlayAlignment}'. Ensure this placement considers the image's composition for optimal visual balance and impact.`;
       }
       if (input.overlayFontSize) {
-        imagePrompt += `\n- Text Font Size: The text should appear in a '${input.overlayFontSize}' relative size. 'Large' or 'Extra Large' should be very prominent, 'Small' should be more subtle but still readable. 'Medium' is a balanced default. The size should feel intentional within the design.`;
+        imagePrompt += `\n- Text Font Size: The text should appear in a '${input.overlayFontSize}' relative size. 'Medium' is a balanced default. 'Small' should be more subtle but still readable. The size should feel intentional within the design.`;
       }
       imagePrompt += `\nConsider the overall image composition, lighting, and depth to ensure the text placement and styling feel natural, engaging, and expertly integrated, making the hook an appealing and integral part of the graphic. The final result should look like a polished piece of social media content.`;
+
     } else {
-      imagePrompt += `\n\nGenerate a high-quality, detailed image based purely on the visual description ("${input.imageVisualPrompt}"), Niche ("${input.niche}"), Category ("${input.category}"), Image Style ("${input.imageType}"), and post context. No text should be overlaid on this image.`;
+      // No overlay text
+      imagePrompt += `\n\nGenerate a high-quality, detailed image based *purely* on the visual description ("${input.imageVisualPrompt}"), general topic ("${input.postTopic}"), Niche ("${input.niche}"), Category ("${input.category}"), Image Style ("${input.imageType}")`;
+      if (input.postType) {
+        imagePrompt += `, and Post Type Context ("${input.postType}")`;
+      }
+      imagePrompt += `. No text should be overlaid on this image. Ensure the image is visually rich and compelling on its own.`;
     }
     
-    imagePrompt += `\n\nThis image is intended for a social media post. Therefore, ensure the composition is engaging, high-quality, and aesthetically pleasing, looking professionally crafted. The image should be detailed and visually rich. **For platforms like Instagram, a square aspect ratio is ideal; please prioritize generating a square image unless the visual description or image style strongly dictates otherwise.** The final image should be well-suited for a typical social media feed.`;
+    imagePrompt += `\n\n**Final Output Goals:**
+This image is intended for a social media post. Therefore:
+- Ensure the composition is engaging, high-quality, and aesthetically pleasing, looking professionally crafted.
+- The image should be detailed and visually rich.
+- **For platforms like Instagram, a square aspect ratio is ideal; please prioritize generating a square image unless the visual description or image style strongly dictates otherwise.**
+- The final image should be well-suited for a typical social media feed, and all elements (visuals, text overlay if present, style, niche, category, post topic/type) must work together harmoniously.`;
     
     const {media} = await ai.generate({
       model: 'googleai/gemini-2.0-flash-exp',
@@ -121,3 +132,4 @@ Key considerations for the hook text integration:
     return {imageUri: media.url};
   }
 );
+
